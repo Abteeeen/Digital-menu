@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Menu</title>
+<style>
+  :root {
+    --primary: #b33a2e;
+    --accent: #d4a15a;
+    --bg: #17130f;
+    --card: rgba(255,255,255,.045);
+    --text: #f2ece2;
+    --muted: #a89e8f;
+    --serif: Georgia, 'Times New Roman', serif;
+    --sans: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    max-width: 480px; margin: 0 auto; min-height: 100vh;
+    padding-bottom: 60px;
+  }
+  header { text-align: center; padding: 44px 24px 20px; }
+  .mark {
+    width: 64px; height: 64px; margin: 0 auto 14px; border-radius: 50%;
+    background: var(--primary); display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-size: 30px; color: #fff;
+    box-shadow: 0 8px 30px color-mix(in srgb, var(--primary) 45%, transparent);
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 500; font-size: 34px;
+    letter-spacing: .22em; text-transform: uppercase;
+  }
+  .tagline { color: var(--muted); font-size: 12.5px; letter-spacing: .14em; text-transform: uppercase; margin-top: 8px; }
+  .rule { width: 44px; height: 2px; background: var(--accent); margin: 18px auto 0; }
+  nav {
+    display: flex; gap: 8px; overflow-x: auto; padding: 18px 20px 6px;
+    position: sticky; top: 0; background: linear-gradient(var(--bg) 75%, transparent);
+    scrollbar-width: none; z-index: 5;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  nav button {
+    flex: 0 0 auto; border: 1px solid rgba(255,255,255,.14); background: transparent;
+    color: var(--muted); font: 600 12px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase;
+    padding: 10px 16px; border-radius: 999px; cursor: pointer; transition: .18s;
+  }
+  nav button.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+  section { padding: 10px 20px; }
+  h2 {
+    font-family: var(--serif); font-weight: 500; font-size: 20px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--accent); margin: 26px 0 4px;
+  }
+  .item {
+    background: var(--card); border: 1px solid rgba(255,255,255,.06);
+    border-radius: 14px; padding: 16px; margin-top: 12px;
+    display: flex; justify-content: space-between; gap: 14px; align-items: baseline;
+  }
+  .item h3 { font-size: 15.5px; font-weight: 600; }
+  .item p { color: var(--muted); font-size: 13px; line-height: 1.5; margin-top: 5px; }
+  .price { font-family: var(--serif); color: var(--accent); font-size: 16px; white-space: nowrap; }
+  footer { text-align: center; color: var(--muted); font-size: 11px; letter-spacing: .12em; padding: 40px 0 10px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<header>
+  <div class="mark" id="mark"></div>
+  <h1 id="name"></h1>
+  <div class="tagline" id="tagline"></div>
+  <div class="rule"></div>
+</header>
+<nav id="nav"></nav>
+<section id="menu"></section>
+<footer id="foot"></footer>
+<script>
+const DATA = /*__MENU_DATA__*/null;
+(function render() {
+  const { brand, menu } = DATA;
+  const r = document.documentElement.style;
+  if (brand.primary_color) r.setProperty('--primary', brand.primary_color);
+  if (brand.accent_color) r.setProperty('--accent', brand.accent_color);
+  if (brand.bg_color) r.setProperty('--bg', brand.bg_color);
+  if (brand.font_style === 'sans') r.setProperty('--serif', 'var(--sans)');
+
+  document.title = brand.name + ' — Menu';
+  document.getElementById('name').textContent = brand.name;
+  document.getElementById('mark').textContent = (brand.name || 'M')[0].toUpperCase();
+  document.getElementById('tagline').textContent = brand.tagline || brand.cuisine || '';
+  document.getElementById('foot').textContent = brand.name + ' · digital menu';
+
+  const nav = document.getElementById('nav');
+  const menuEl = document.getElementById('menu');
+  const cats = menu.categories || [];
+
+  function show(idx) {
+    [...nav.children].forEach((b, i) => b.classList.toggle('on', i === idx));
+    menuEl.innerHTML = '';
+    const c = cats[idx];
+    const h = document.createElement('h2');
+    h.textContent = c.name;
+    menuEl.appendChild(h);
+    for (const it of c.items) {
+      const d = document.createElement('div');
+      d.className = 'item';
+      d.innerHTML = '<div><h3></h3><p></p></div><div class="price"></div>';
+      d.querySelector('h3').textContent = it.name;
+      d.querySelector('p').textContent = it.description || '';
+      d.querySelector('.price').textContent = it.price || '';
+      menuEl.appendChild(d);
+    }
+    window.scrollTo({ top: 0 });
+  }
+
+  cats.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.textContent = c.name;
+    b.onclick = () => show(i);
+    nav.appendChild(b);
+  });
+  if (cats.length) show(0);
+})();
+</script>
+</body>
+</html>

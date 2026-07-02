@@ -1,0 +1,13 @@
+{
+  "name": "Kiyomi",
+  "slug": "kiyomi",
+  "website": "https://kiyomi-sake-bar.example.com",
+  "cuisine": "Japanese sake bar",
+  "address": {
+    "full": "5510 Morehouse Dr, San Diego, CA 92121",
+    "line1": "5510 Morehouse Dr",
+    "city": "San Diego",
+    "state": "CA",
+    "zip": "92121"
+  }
+}

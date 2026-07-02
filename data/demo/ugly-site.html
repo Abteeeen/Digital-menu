@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Vid Nikolic</title>
+<style>
+  body { background: #cbbfa8; font-family: 'Comic Sans MS', 'Trebuchet MS', cursive; margin: 0; color: #5a5142; }
+  .top { background: #6e6152; color: #d9cfb8; padding: 18px 12px; text-align: center; }
+  .top h1 { font-family: 'Papyrus', 'Trebuchet MS', fantasy; margin: 0; font-size: 26px; letter-spacing: 2px; }
+  .live { font-size: 10px; background: #8a3b2e; color: #fff; display: inline-block; padding: 2px 8px; margin-top: 6px; border-radius: 3px; }
+  marquee { background: #b8a98c; color: #7a2f22; font-size: 13px; padding: 4px 0; }
+  .search { margin: 10px; padding: 8px; background: #ddd3bd; border: 2px inset #999; font-size: 12px; color: #999; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; }
+  .tabs span { background: #7a6f5d; color: #e8e0cc; font-size: 10px; padding: 5px 9px; border: 1px outset #fff; }
+  .tabs span.on { background: #4a4238; }
+  .note { background: #efe6d0; border: 1px dashed #8a7d66; margin: 10px; padding: 10px; font-size: 12px; }
+  .item { margin: 12px; background: #d9cfb8; border: 1px solid #9c8f77; padding: 10px; }
+  .item img { width: 100%; display: block; filter: saturate(1.35) contrast(.92); }
+  .drink { height: 210px; background: linear-gradient(180deg, #d8b13e 0%, #e4c65e 55%, #f0e3ae 100%); position: relative; border: 6px solid #efe6d0; }
+  .drink::after { content: ''; position: absolute; top: 18px; left: 50%; transform: translateX(-50%); width: 84px; height: 84px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #f6d76b, #d99a26); box-shadow: 0 4px 8px rgba(0,0,0,.25); }
+  .item h3 { margin: 8px 0 4px; font-size: 15px; color: #6e3b2c; text-decoration: underline; }
+  .item p { margin: 0; font-size: 11px; line-height: 1.5; }
+  .price { color: #8a3b2e; font-weight: bold; font-size: 14px; }
+  .foot { text-align: center; font-size: 9px; padding: 14px; color: #8a7d66; }
+  .hero { height: 150px; background: linear-gradient(120deg, #3a2c22, #6e4a33 60%, #2c211a); margin: 10px; position: relative; overflow: hidden; border: 4px ridge #b8a98c; }
+  .hero .moon { position: absolute; top: 24px; left: 30px; width: 58px; height: 58px; border-radius: 50%; background: #e8dcc0; opacity: .9; }
+  .hero h2 { position: absolute; bottom: 8px; right: 10px; color: #d9cfb8; font-family: 'Papyrus', fantasy; font-size: 20px; margin: 0; text-shadow: 1px 1px 0 #000; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <h1>~ Vid Nikolic ~</h1>
+    <div class="live">LIVE · WEEKLY FREE-TIER PICK</div>
+  </div>
+  <marquee>Welcome to our restaurant!! Best sushi & sake in town!!! Call for reservation!!</marquee>
+  <div class="hero"><div class="moon"></div><h2>Kiyomi??</h2></div>
+  <div class="search">Search our menu...</div>
+  <div class="tabs">
+    <span class="on">COCKTAILS</span><span>FOOD</span><span>DRINKS</span><span>DESSERTS</span><span>SEASONAL CARTE</span>
+  </div>
+  <div class="note"><b>BEFORE:</b> menu is possibly out of date!! call to confirm prices. Last updated 2019.</div>
+  <div class="item">
+    <div class="drink"></div>
+    <h3>Soribam Highball</h3>
+    <p>Cognac, infused with Szechuan Pepper, Tomki, dry vermouth, Vanilla, Lemon zest, Sesame, Oolong. Sesam.</p>
+    <p class="price">£14.00</p>
+    <p style="font-size:9px;">AROMAS &amp; SCENTS OF DISTINCTION</p>
+  </div>
+  <div class="foot">copyright 2013 · best viewed in Internet Explorer · site by owner's nephew</div>
+</body>
+</html>

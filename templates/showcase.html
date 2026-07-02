@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1920px; height: 1080px; overflow: hidden;
+    background: #0b0a08;
+    background-image: radial-gradient(ellipse 70% 60% at 50% 42%, #1a1510 0%, #0b0a08 70%);
+    font-family: 'SF Mono', 'Cascadia Code', Menlo, monospace;
+    color: #cfc5b4; position: relative;
+  }
+  .bar {
+    position: absolute; left: 0; right: 0; height: 34px; padding: 0 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #6f6553;
+    border-color: #241f18;
+  }
+  .bar.top { top: 0; border-bottom: 1px solid #241f18; }
+  .bar.bottom { bottom: 0; border-top: 1px solid #241f18; }
+  .bar b { color: #b9ad97; font-weight: 500; }
+  .accent { color: #c8963e; }
+
+  .stage {
+    position: absolute; top: 70px; bottom: 96px; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: center; gap: 46px;
+  }
+  .arrow { color: #4e4536; font-size: 26px; }
+
+  .panel-label {
+    font-size: 10.5px; letter-spacing: .22em; text-transform: uppercase;
+    color: #7d715c; text-align: center; margin-bottom: 14px;
+  }
+  .panel-label .tag { color: #c8963e; }
+
+  .frame { position: relative; padding: 18px; }
+  .frame::before, .frame::after,
+  .frame .c3, .frame .c4 { content: ''; position: absolute; width: 16px; height: 16px; border: 1px solid #5a4f3d; }
+  .frame::before { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+  .frame::after { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+  .frame .c3 { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+  .frame .c4 { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+
+  .before-shot {
+    width: 330px; height: 700px; overflow: hidden; border-radius: 10px;
+    border: 1px solid #322b21; background: #111;
+    filter: saturate(.85);
+  }
+  .before-shot img { width: 100%; display: block; }
+
+  .phone {
+    width: 370px; height: 760px; border-radius: 42px; background: #000;
+    border: 2px solid #3a332a; padding: 12px; position: relative;
+    box-shadow: 0 40px 90px rgba(0,0,0,.7), 0 0 60px rgba(200,150,62,.07);
+  }
+  .phone .notch {
+    position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 24px; background: #000; border-radius: 12px; z-index: 3;
+  }
+  .phone iframe {
+    width: 390px; height: 828px; border: 0; border-radius: 32px;
+    transform: scale(0.888); transform-origin: 0 0; background: #17130f;
+  }
+
+  .postcard {
+    width: 430px; background: #f6f1e7; color: #241f17; border-radius: 6px;
+    padding: 30px 32px; font-family: Georgia, serif;
+    box-shadow: 0 30px 70px rgba(0,0,0,.6);
+    position: relative;
+  }
+  .postcard .meta {
+    display: flex; justify-content: space-between; font-family: inherit;
+    font-family: 'SF Mono', Menlo, monospace; font-size: 9.5px; letter-spacing: .18em;
+    text-transform: uppercase; color: #99897040; color: #9a8b71; margin-bottom: 18px;
+  }
+  .postcard h2 { font-size: 26px; font-weight: 500; font-style: italic; padding-right: 105px; }
+  .postcard .body { font-size: 13.5px; line-height: 1.65; margin-top: 14px; color: #43392c; padding-right: 105px; }
+  .postcard .sig { font-style: italic; margin-top: 16px; font-size: 15px; }
+  .postcard .qr {
+    position: absolute; top: 52px; right: 30px; width: 84px; height: 84px;
+    background: #fff; border: 1px solid #d8cdbb; padding: 5px;
+  }
+  .postcard .qr img { width: 100%; height: 100%; display: block; }
+  .postcard .foot {
+    margin-top: 22px; padding-top: 14px; border-top: 1px solid #ddd2bf;
+    font-family: 'SF Mono', Menlo, monospace; font-size: 9px; letter-spacing: .16em;
+    text-transform: uppercase; color: #9a8b71; line-height: 1.8;
+  }
+
+  .caption {
+    position: absolute; bottom: 44px; left: 0; right: 0; text-align: center;
+  }
+  .caption .name {
+    font-family: Georgia, serif; font-style: italic; font-size: 22px; color: #e8dfd0;
+  }
+  .caption .sub { font-size: 11px; letter-spacing: .14em; color: #6f6553; margin-top: 6px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+  <div class="bar top">
+    <div>&#9679; AGENT ONLINE &nbsp;&nbsp;WEEKLY FREE-TIER</div>
+    <div><b>{{RESTAURANT}}</b> &nbsp;&middot;&nbsp; SCORING UGLINESS <span class="accent">{{SCORE}}/10</span></div>
+    <div>{{ITEMS}} MENU ITEMS PARSED</div>
+  </div>
+
+  <div class="stage">
+    <div>
+      <div class="panel-label"><span class="tag">BEFORE</span> &middot; DISCOVERED ON THE OPEN WEB</div>
+      <div class="frame"><span class="c3"></span><span class="c4"></span>
+        <div class="before-shot"><img src="data:image/png;base64,{{BEFORE_B64}}"></div>
+      </div>
+    </div>
+
+    <div class="arrow">&#10142;</div>
+
+    <div>
+      <div class="panel-label"><span class="tag">AFTER</span> &middot; GENERATED MENU APP</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <iframe srcdoc="{{APP_SRCDOC}}"></iframe>
+      </div>
+    </div>
+
+    <div class="arrow">&#10142;</div>
+
+    <div>
+      <div class="panel-label"><span class="tag">POSTCARD</span> &middot; PRINTED &amp; MAILED VIA LOB</div>
+      <div class="postcard">
+        <div class="meta"><span>POSTCARD</span><span>USPS FIRST CLASS</span></div>
+        <h2>{{HEADLINE}}</h2>
+        <div class="qr"><img src="data:image/png;base64,{{QR_B64}}"></div>
+        <div class="body">{{BODY}}</div>
+        <div class="sig">{{SIGNOFF}}</div>
+        <div class="foot">QUIRK QUOTED: {{QUIRK}}<br>MAILED TO REGISTERED OFFICE &middot; QR &rarr; LIVE APP</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="caption">
+    <div class="name">{{RESTAURANT}}</div>
+    <div class="sub">{{VERDICT}}</div>
+  </div>
+
+  <div class="bar bottom">
+    <div>PLATE-PIXEL &middot; DIGITAL INTAKE</div>
+    <div>{{CATS}} CATEGORIES &middot; {{ITEMS}} ITEMS &middot; QUIRK FOUND</div>
+    <div>BUILT &amp; MAILED ON AUTOPILOT</div>
+  </div>
+</body>
+</html>

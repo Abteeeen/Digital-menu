@@ -1,0 +1,27 @@
+{
+  "name": "plate-pixel",
+  "version": "0.1.0",
+  "description": "Automated B2B pipeline: find ugly restaurant menus, rebuild them as branded web apps, mail the owner a QR postcard.",
+  "type": "module",
+  "bin": {
+    "plate-pixel": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "demo": "node src/index.js run --demo",
+    "discover": "node src/index.js discover",
+    "analyze": "node src/index.js analyze",
+    "rebuild": "node src/index.js rebuild",
+    "pitch": "node src/index.js pitch",
+    "fulfill": "node src/index.js fulfill",
+    "showcase": "node src/index.js showcase"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "playwright": "^1.45.0",
+    "qrcode": "^1.5.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

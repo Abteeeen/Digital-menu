@@ -1,0 +1,21 @@
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 6.25in; height: 4.25in; background: #fdfaf4; font-family: Georgia, serif; color: #211c16; }
+  /* Left half only — Lob reserves the right side for address + postage */
+  .msg { position: absolute; top: .1875in; left: .1875in; bottom: .1875in; width: 2.9in; padding: .28in .2in; }
+  .hi { font-style: italic; font-size: 12pt; color: {{PRIMARY}}; }
+  p { font-size: 10.5pt; line-height: 1.55; margin-top: .14in; }
+  .sig { margin-top: .18in; font-size: 12pt; font-style: italic; }
+</style>
+</head>
+<body>
+  <div class="msg">
+    <div class="hi">A note about your menu —</div>
+    <p>{{BODY}}</p>
+    <div class="sig">{{SIGNOFF}}</div>
+  </div>
+</body>
+</html>

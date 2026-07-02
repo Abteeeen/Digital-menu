@@ -1,0 +1,50 @@
+{
+  "ugliness_score": 8,
+  "verdict": "A 2009-era template with unreadable beige-on-beige text and a menu buried three clicks deep.",
+  "quirk": "Your website tab title says 'Vid Nikolic' instead of Kiyomi.",
+  "qualified": true,
+  "brand": {
+    "name": "Kiyomi",
+    "tagline": "Sake bar · Japanese izakaya",
+    "primary_color": "#b3402e",
+    "accent_color": "#d4a15a",
+    "bg_color": "#17130f",
+    "font_style": "serif",
+    "cuisine": "Japanese"
+  },
+  "menu": {
+    "categories": [
+      {
+        "name": "Sake",
+        "items": [
+          { "name": "Dassai 45 Junmai Daiginjo", "description": "Polished, floral, dangerously smooth. Served chilled.", "price": "$16" },
+          { "name": "Kubota Senju Ginjo", "description": "Dry and clean with a whisper of pear.", "price": "$13" },
+          { "name": "Hakkaisan Tokubetsu Junmai", "description": "Crisp snow-country classic from Niigata.", "price": "$14" },
+          { "name": "Kikusui Perfect Snow Nigori", "description": "Unfiltered, creamy, sweet rice finish.", "price": "$12" }
+        ]
+      },
+      {
+        "name": "Small Plates",
+        "items": [
+          { "name": "Aka Miso Soup", "description": "Red miso, tofu, wakame, scallion.", "price": "$6" },
+          { "name": "Seafood Murakame", "description": "Chef's daily sashimi selection over sushi rice.", "price": "$24" },
+          { "name": "Agedashi Tofu", "description": "Crispy tofu in warm dashi broth.", "price": "$9" }
+        ]
+      },
+      {
+        "name": "Robata",
+        "items": [
+          { "name": "Wagyu Tataki", "description": "Seared A5 wagyu, ponzu, garlic chip.", "price": "$29" },
+          { "name": "Miso Black Cod Skewer", "description": "48-hour miso-cured, charred over binchotan.", "price": "$18" }
+        ]
+      },
+      {
+        "name": "Cocktails",
+        "items": [
+          { "name": "Soribam Highball", "description": "Japanese whisky, yuzu, soda, shiso.", "price": "$14" },
+          { "name": "Umeshu Sour", "description": "Plum wine, lemon, egg white silk.", "price": "$13" }
+        ]
+      }
+    ]
+  }
+}

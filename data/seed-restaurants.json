@@ -1,0 +1,8 @@
+[
+  {
+    "name": "Example Diner",
+    "website": "https://example.com",
+    "cuisine": "American",
+    "address": { "full": "1 Example Way, Austin, TX 78701", "line1": "1 Example Way", "city": "Austin", "state": "TX", "zip": "78701" }
+  }
+]
