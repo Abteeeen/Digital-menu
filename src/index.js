@@ -102,6 +102,7 @@ const commands = {
       for (const f of ['lead.json', 'analysis.json', 'before.png']) {
         await fs.copyFile(path.join(demoSrc, f), path.join(dir, f));
       }
+      await fs.cp(path.join(demoSrc, 'assets'), path.join(dir, 'assets'), { recursive: true, force: true });
       await processLead(lead, { demo: true, mail: !!flags.mail });
       console.log(`\nDemo complete. Open out/${lead.slug}/showcase.png`);
       return;

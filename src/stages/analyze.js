@@ -16,9 +16,17 @@ export async function analyze(lead) {
   await fs.mkdir(dir, { recursive: true });
 
   console.log(`  scanning ${lead.website} ...`);
-  const { screenshot, pageMeta } = await capture(lead.website);
+  const { screenshot, pageMeta, photoFiles } = await capture(lead.website);
   const beforePath = path.join(dir, 'before.png');
   await fs.writeFile(beforePath, screenshot);
+
+  // Save their real photos as assets for the rebuild.
+  const assetsDir = path.join(dir, 'assets');
+  await fs.mkdir(assetsDir, { recursive: true });
+  for (const p of photoFiles) {
+    await fs.writeFile(path.join(assetsDir, `img-${p.index}.${p.ext}`), p.body);
+  }
+  if (photoFiles.length) console.log(`  saved ${photoFiles.length} photos from their site`);
 
   const analysis = await analyzeSite({
     screenshotBase64: screenshot.toString('base64'),
@@ -53,6 +61,13 @@ async function capture(url) {
         colors.add(cs.color);
         if (cs.backgroundColor !== 'rgba(0, 0, 0, 0)') colors.add(cs.backgroundColor);
       });
+      // Real content photos only: big enough to be food/interior shots,
+      // not logos, icons, or tracking pixels.
+      const photos = [...document.images]
+        .filter((i) => i.naturalWidth >= 250 && i.naturalHeight >= 180 && i.src.startsWith('http'))
+        .filter((i) => !/logo|icon|sprite|badge|payment/i.test(i.src + ' ' + (i.alt || '')))
+        .slice(0, 16)
+        .map((i, idx) => ({ index: idx, src: i.src, alt: i.alt || '', w: i.naturalWidth, h: i.naturalHeight }));
       return {
         title: document.title,
         description: document.querySelector('meta[name="description"]')?.content || '',
@@ -60,12 +75,24 @@ async function capture(url) {
         colors: [...colors].slice(0, 15),
         favicon: !!document.querySelector('link[rel*="icon"]'),
         text: document.body.innerText.replace(/\s+/g, ' ').slice(0, 4000),
-        images: [...document.images].slice(0, 12).map((i) => i.src),
+        photos,
       };
     });
 
+    // Download the candidate photos so the rebuilt app can embed them.
+    const photoFiles = [];
+    for (const p of pageMeta.photos) {
+      try {
+        const resp = await page.request.get(p.src, { timeout: 15000 });
+        if (!resp.ok()) continue;
+        const ct = resp.headers()['content-type'] || '';
+        const ext = ct.includes('png') ? 'png' : ct.includes('webp') ? 'webp' : ct.includes('gif') ? 'gif' : 'jpg';
+        photoFiles.push({ index: p.index, ext, body: await resp.body(), src: p.src, alt: p.alt });
+      } catch {}
+    }
+
     const screenshot = await page.screenshot({ fullPage: true });
-    return { screenshot, pageMeta };
+    return { screenshot, pageMeta, photoFiles };
   } finally {
     await browser.close();
   }

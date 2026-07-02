@@ -19,9 +19,12 @@ export async function rebuild(lead, analysis) {
   await fs.mkdir(appDir, { recursive: true });
 
   const template = await fs.readFile(path.join(config.templatesDir, 'menu-app.html'), 'utf8');
+  const images = await loadAssets(path.join(dir, 'assets'));
+  const menu = attachImages(analysis.menu, images);
   const payload = {
     brand: analysis.brand,
-    menu: analysis.menu,
+    hero_image: images[analysis.hero_image] ?? null,
+    menu,
     generated_at: new Date().toISOString(),
   };
   const html = template.replace('/*__MENU_DATA__*/null', JSON.stringify(payload));
@@ -40,6 +43,39 @@ export async function rebuild(lead, analysis) {
   const result = { url, deployed, app_dir: appDir };
   await fs.writeFile(path.join(dir, 'rebuild.json'), JSON.stringify(result, null, 2));
   return result;
+}
+
+/** Read out/<slug>/assets/img-N.* into { N: dataURI }. */
+async function loadAssets(assetsDir) {
+  const images = {};
+  let files = [];
+  try {
+    files = await fs.readdir(assetsDir);
+  } catch {
+    return images;
+  }
+  const mime = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', svg: 'image/svg+xml' };
+  for (const f of files) {
+    const m = f.match(/^img-(\d+)\.(\w+)$/);
+    if (!m) continue;
+    const buf = await fs.readFile(path.join(assetsDir, f));
+    images[Number(m[1])] = `data:${mime[m[2]] || 'image/jpeg'};base64,${buf.toString('base64')}`;
+  }
+  return images;
+}
+
+/** Replace item.image photo indices with embedded data URIs. */
+function attachImages(menu, images) {
+  return {
+    ...menu,
+    categories: (menu.categories || []).map((c) => ({
+      ...c,
+      items: c.items.map((it) => ({
+        ...it,
+        image: it.image != null && images[it.image] ? images[it.image] : null,
+      })),
+    })),
+  };
 }
 
 async function deployToVercel(appDir, slug) {

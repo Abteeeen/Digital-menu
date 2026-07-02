@@ -3,81 +3,123 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17130f">
 <title>Menu</title>
 <style>
   :root {
     --primary: #b33a2e;
     --accent: #d4a15a;
     --bg: #17130f;
-    --card: rgba(255,255,255,.045);
+    --card: rgba(255,255,255,.05);
+    --line: rgba(255,255,255,.08);
     --text: #f2ece2;
     --muted: #a89e8f;
     --serif: Georgia, 'Times New Roman', serif;
     --sans: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
   body {
-    background: var(--bg); color: var(--text);
-    font-family: var(--sans);
+    background: var(--bg); color: var(--text); font-family: var(--sans);
     -webkit-font-smoothing: antialiased;
-    max-width: 480px; margin: 0 auto; min-height: 100vh;
-    padding-bottom: 60px;
+    max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: 70px;
   }
-  header { text-align: center; padding: 44px 24px 20px; }
+
+  /* ---- hero ---- */
+  .hero { position: relative; min-height: 280px; display: flex; align-items: flex-end; overflow: hidden; }
+  .hero .bg {
+    position: absolute; inset: 0; background-size: cover; background-position: center;
+    transform: scale(1.05); filter: saturate(1.05);
+  }
+  .hero .bg.fallback {
+    background: radial-gradient(120% 90% at 20% 0%,
+      color-mix(in srgb, var(--primary) 55%, var(--bg)) 0%, var(--bg) 70%);
+  }
+  .hero .shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.15) 0%, color-mix(in srgb, var(--bg) 92%, transparent) 78%, var(--bg) 100%); }
+  .hero .inner { position: relative; width: 100%; padding: 60px 24px 22px; text-align: center; animation: rise .7s cubic-bezier(.2,.7,.2,1) both; }
   .mark {
-    width: 64px; height: 64px; margin: 0 auto 14px; border-radius: 50%;
+    width: 58px; height: 58px; margin: 0 auto 12px; border-radius: 50%;
     background: var(--primary); display: flex; align-items: center; justify-content: center;
-    font-family: var(--serif); font-size: 30px; color: #fff;
-    box-shadow: 0 8px 30px color-mix(in srgb, var(--primary) 45%, transparent);
+    font-family: var(--serif); font-size: 27px; color: #fff;
+    box-shadow: 0 8px 30px color-mix(in srgb, var(--primary) 50%, transparent);
   }
-  h1 {
-    font-family: var(--serif); font-weight: 500; font-size: 34px;
-    letter-spacing: .22em; text-transform: uppercase;
+  h1 { font-family: var(--serif); font-weight: 500; font-size: 33px; letter-spacing: .2em; text-transform: uppercase; text-shadow: 0 2px 18px rgba(0,0,0,.5); }
+  .tagline { color: var(--muted); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; margin-top: 7px; }
+  .rule { width: 44px; height: 2px; background: var(--accent); margin: 16px auto 0; }
+
+  /* ---- sticky glass nav + search ---- */
+  .chrome {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 72%, transparent);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line); padding: 10px 0 0;
   }
-  .tagline { color: var(--muted); font-size: 12.5px; letter-spacing: .14em; text-transform: uppercase; margin-top: 8px; }
-  .rule { width: 44px; height: 2px; background: var(--accent); margin: 18px auto 0; }
-  nav {
-    display: flex; gap: 8px; overflow-x: auto; padding: 18px 20px 6px;
-    position: sticky; top: 0; background: linear-gradient(var(--bg) 75%, transparent);
-    scrollbar-width: none; z-index: 5;
+  .search { margin: 0 20px 10px; position: relative; }
+  .search input {
+    width: 100%; background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    color: var(--text); font: 400 14px var(--sans); padding: 11px 14px 11px 38px; outline: none;
+    transition: border-color .2s;
   }
+  .search input:focus { border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
+  .search svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; stroke: var(--muted); fill: none; stroke-width: 2; }
+  nav { display: flex; gap: 8px; overflow-x: auto; padding: 2px 20px 12px; scrollbar-width: none; }
   nav::-webkit-scrollbar { display: none; }
   nav button {
-    flex: 0 0 auto; border: 1px solid rgba(255,255,255,.14); background: transparent;
-    color: var(--muted); font: 600 12px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase;
-    padding: 10px 16px; border-radius: 999px; cursor: pointer; transition: .18s;
+    flex: 0 0 auto; border: 1px solid var(--line); background: transparent;
+    color: var(--muted); font: 600 11.5px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase;
+    padding: 10px 15px; border-radius: 999px; cursor: pointer; transition: .18s;
   }
   nav button.on { background: var(--primary); border-color: var(--primary); color: #fff; }
-  section { padding: 10px 20px; }
-  h2 {
-    font-family: var(--serif); font-weight: 500; font-size: 20px; letter-spacing: .1em;
-    text-transform: uppercase; color: var(--accent); margin: 26px 0 4px;
-  }
+
+  /* ---- items ---- */
+  section { padding: 8px 20px; }
+  h2 { font-family: var(--serif); font-weight: 500; font-size: 19px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin: 24px 0 2px; }
   .item {
-    background: var(--card); border: 1px solid rgba(255,255,255,.06);
-    border-radius: 14px; padding: 16px; margin-top: 12px;
-    display: flex; justify-content: space-between; gap: 14px; align-items: baseline;
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    margin-top: 12px; overflow: hidden;
+    animation: rise .5s cubic-bezier(.2,.7,.2,1) both;
   }
+  .item .photo { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
+  .item .txt { padding: 14px 16px 15px; display: flex; justify-content: space-between; gap: 14px; align-items: baseline; }
   .item h3 { font-size: 15.5px; font-weight: 600; }
   .item p { color: var(--muted); font-size: 13px; line-height: 1.5; margin-top: 5px; }
-  .price { font-family: var(--serif); color: var(--accent); font-size: 16px; white-space: nowrap; }
-  footer { text-align: center; color: var(--muted); font-size: 11px; letter-spacing: .12em; padding: 40px 0 10px; text-transform: uppercase; }
+  .price {
+    font-family: var(--serif); color: var(--accent); font-size: 15px; white-space: nowrap;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+    padding: 4px 10px; border-radius: 999px;
+  }
+  .empty { text-align: center; color: var(--muted); font-size: 13px; padding: 40px 0; }
+  footer { text-align: center; color: var(--muted); font-size: 10.5px; letter-spacing: .14em; padding: 44px 0 8px; text-transform: uppercase; }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } html { scroll-behavior: auto; } }
 </style>
 </head>
 <body>
-<header>
-  <div class="mark" id="mark"></div>
-  <h1 id="name"></h1>
-  <div class="tagline" id="tagline"></div>
-  <div class="rule"></div>
-</header>
-<nav id="nav"></nav>
+<div class="hero">
+  <div class="bg fallback" id="heroBg"></div>
+  <div class="shade"></div>
+  <div class="inner">
+    <div class="mark" id="mark"></div>
+    <h1 id="name"></h1>
+    <div class="tagline" id="tagline"></div>
+    <div class="rule"></div>
+  </div>
+</div>
+<div class="chrome">
+  <div class="search">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+    <input id="q" type="search" placeholder="Search the menu…" autocomplete="off">
+  </div>
+  <nav id="nav"></nav>
+</div>
 <section id="menu"></section>
 <footer id="foot"></footer>
 <script>
 const DATA = /*__MENU_DATA__*/null;
-(function render() {
-  const { brand, menu } = DATA;
+(function () {
+  const { brand, menu, hero_image } = DATA;
   const r = document.documentElement.style;
   if (brand.primary_color) r.setProperty('--primary', brand.primary_color);
   if (brand.accent_color) r.setProperty('--accent', brand.accent_color);
@@ -89,37 +131,76 @@ const DATA = /*__MENU_DATA__*/null;
   document.getElementById('mark').textContent = (brand.name || 'M')[0].toUpperCase();
   document.getElementById('tagline').textContent = brand.tagline || brand.cuisine || '';
   document.getElementById('foot').textContent = brand.name + ' · digital menu';
+  if (hero_image) {
+    const bg = document.getElementById('heroBg');
+    bg.classList.remove('fallback');
+    bg.style.backgroundImage = 'url(' + hero_image + ')';
+  }
 
   const nav = document.getElementById('nav');
   const menuEl = document.getElementById('menu');
+  const q = document.getElementById('q');
   const cats = menu.categories || [];
+  let active = 0;
 
-  function show(idx) {
-    [...nav.children].forEach((b, i) => b.classList.toggle('on', i === idx));
+  function card(it, delay) {
+    const d = document.createElement('div');
+    d.className = 'item';
+    d.style.animationDelay = (delay * 45) + 'ms';
+    if (it.image) {
+      const img = document.createElement('img');
+      img.className = 'photo';
+      img.src = it.image;
+      img.alt = it.name;
+      img.loading = 'lazy';
+      d.appendChild(img);
+    }
+    const t = document.createElement('div');
+    t.className = 'txt';
+    t.innerHTML = '<div><h3></h3><p></p></div><div class="price"></div>';
+    t.querySelector('h3').textContent = it.name;
+    t.querySelector('p').textContent = it.description || '';
+    t.querySelector('.price').textContent = it.price || '';
+    if (!it.description) t.querySelector('p').remove();
+    if (!it.price) t.querySelector('.price').remove();
+    d.appendChild(t);
+    return d;
+  }
+
+  function render() {
     menuEl.innerHTML = '';
-    const c = cats[idx];
+    const term = q.value.trim().toLowerCase();
+    if (term) {
+      let n = 0;
+      for (const c of cats) {
+        const hits = c.items.filter((it) =>
+          (it.name + ' ' + (it.description || '')).toLowerCase().includes(term));
+        if (!hits.length) continue;
+        const h = document.createElement('h2');
+        h.textContent = c.name;
+        menuEl.appendChild(h);
+        hits.forEach((it) => menuEl.appendChild(card(it, n++)));
+      }
+      if (!n) menuEl.innerHTML = '<div class="empty">Nothing matches “' + term.replace(/</g, '&lt;') + '”</div>';
+      return;
+    }
+    [...nav.children].forEach((b, i) => b.classList.toggle('on', i === active));
+    const c = cats[active];
+    if (!c) return;
     const h = document.createElement('h2');
     h.textContent = c.name;
     menuEl.appendChild(h);
-    for (const it of c.items) {
-      const d = document.createElement('div');
-      d.className = 'item';
-      d.innerHTML = '<div><h3></h3><p></p></div><div class="price"></div>';
-      d.querySelector('h3').textContent = it.name;
-      d.querySelector('p').textContent = it.description || '';
-      d.querySelector('.price').textContent = it.price || '';
-      menuEl.appendChild(d);
-    }
-    window.scrollTo({ top: 0 });
+    c.items.forEach((it, i) => menuEl.appendChild(card(it, i)));
   }
 
   cats.forEach((c, i) => {
     const b = document.createElement('button');
     b.textContent = c.name;
-    b.onclick = () => show(i);
+    b.onclick = () => { q.value = ''; active = i; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
     nav.appendChild(b);
   });
-  if (cats.length) show(0);
+  q.addEventListener('input', render);
+  render();
 })();
 </script>
 </body>

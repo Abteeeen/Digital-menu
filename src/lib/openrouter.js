@@ -53,13 +53,15 @@ Return ONLY a JSON object with this exact shape:
     "font_style": "<'serif' | 'sans' | 'display'>",
     "cuisine": "<cuisine type>"
   },
+  "hero_image": <index from pageMeta.photos of the best atmospheric/hero-worthy photo, or null>,
   "menu": {
     "categories": [
-      { "name": "<category>", "items": [ { "name": "", "description": "", "price": "<as shown, keep currency>" } ] }
+      { "name": "<category>", "items": [ { "name": "", "description": "", "price": "<as shown, keep currency>", "image": <index from pageMeta.photos of the photo showing THIS dish, or null> } ] }
     ]
   }
 }
 Extract EVERY menu item you can read with its real price. If descriptions are missing, write a short appetizing one and prefix nothing (keep it natural).
+pageMeta.photos lists real photos found on their site (index, src, alt, dimensions). Match photos to menu items via alt text / src filename / what you can see in the screenshot. Only assign an image when you're reasonably confident it shows that dish; never assign the same photo to more than one item.
 
 Page metadata:
 ${JSON.stringify(pageMeta).slice(0, 6000)}`;
