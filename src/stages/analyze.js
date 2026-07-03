@@ -33,16 +33,26 @@ export async function analyze(lead) {
     pageMeta,
   });
   analysis.captured_at = new Date().toISOString();
-  analysis.qualified = analysis.ugliness_score >= config.uglinessThreshold;
+  analysis.low_confidence = !!pageMeta.low_content;
+  analysis.qualified = analysis.ugliness_score >= config.uglinessThreshold && !analysis.low_confidence;
 
   await fs.writeFile(path.join(dir, 'analysis.json'), JSON.stringify(analysis, null, 2));
-  console.log(
-    `  ${lead.name}: ugliness ${analysis.ugliness_score}/10 — ${
-      analysis.qualified ? 'QUALIFIED' : 'skipped (not ugly enough)'
-    }`
-  );
+  if (analysis.low_confidence) {
+    console.log(
+      `  ! ${lead.name}: page still looked near-empty after the retry — extraction is unreliable ` +
+        `(likely a slow/JS-rendered page the model had nothing real to read), skipping auto-qualification`
+    );
+  } else {
+    console.log(
+      `  ${lead.name}: ugliness ${analysis.ugliness_score}/10 — ${
+        analysis.qualified ? 'QUALIFIED' : 'skipped (not ugly enough)'
+      }`
+    );
+  }
   return analysis;
 }
+
+const MIN_CONTENT_CHARS = 200;
 
 async function capture(url) {
   const browser = await launchBrowser();
@@ -52,32 +62,21 @@ async function capture(url) {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.waitForTimeout(3000); // let lazy content settle
 
-    const pageMeta = await page.evaluate(() => {
-      const styles = new Set();
-      const colors = new Set();
-      document.querySelectorAll('h1,h2,h3,p,a,button,body').forEach((el) => {
-        const cs = getComputedStyle(el);
-        styles.add(cs.fontFamily.split(',')[0].replace(/["']/g, '').trim());
-        colors.add(cs.color);
-        if (cs.backgroundColor !== 'rgba(0, 0, 0, 0)') colors.add(cs.backgroundColor);
-      });
-      // Real content photos only: big enough to be food/interior shots,
-      // not logos, icons, or tracking pixels.
-      const photos = [...document.images]
-        .filter((i) => i.naturalWidth >= 250 && i.naturalHeight >= 180 && i.src.startsWith('http'))
-        .filter((i) => !/logo|icon|sprite|badge|payment/i.test(i.src + ' ' + (i.alt || '')))
-        .slice(0, 16)
-        .map((i, idx) => ({ index: idx, src: i.src, alt: i.alt || '', w: i.naturalWidth, h: i.naturalHeight }));
-      return {
-        title: document.title,
-        description: document.querySelector('meta[name="description"]')?.content || '',
-        fonts: [...styles].slice(0, 8),
-        colors: [...colors].slice(0, 15),
-        favicon: !!document.querySelector('link[rel*="icon"]'),
-        text: document.body.innerText.replace(/\s+/g, ' ').slice(0, 4000),
-        photos,
-      };
-    });
+    let pageMeta = await extractPageMeta(page);
+
+    // Some sites (SPAs, order-ahead widgets, etc.) return a real 200 with a
+    // DOM that's still nearly empty at this point — the menu hasn't rendered
+    // yet. Handing that to the vision model doesn't fail loudly; it just
+    // confidently invents a plausible-looking fake menu. Give it one more,
+    // longer, network-idle chance before we trust what we've got.
+    if (pageMeta.text.trim().length < MIN_CONTENT_CHARS) {
+      console.log('  page looks JS-rendered with little content yet — waiting longer...');
+      await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+      await page.waitForTimeout(2500);
+      pageMeta = await extractPageMeta(page);
+    }
+    pageMeta.low_content = pageMeta.text.trim().length < MIN_CONTENT_CHARS;
 
     // Download the candidate photos so the rebuilt app can embed them.
     const photoFiles = [];
@@ -96,4 +95,33 @@ async function capture(url) {
   } finally {
     await browser.close();
   }
+}
+
+async function extractPageMeta(page) {
+  return page.evaluate(() => {
+    const styles = new Set();
+    const colors = new Set();
+    document.querySelectorAll('h1,h2,h3,p,a,button,body').forEach((el) => {
+      const cs = getComputedStyle(el);
+      styles.add(cs.fontFamily.split(',')[0].replace(/["']/g, '').trim());
+      colors.add(cs.color);
+      if (cs.backgroundColor !== 'rgba(0, 0, 0, 0)') colors.add(cs.backgroundColor);
+    });
+    // Real content photos only: big enough to be food/interior shots,
+    // not logos, icons, or tracking pixels.
+    const photos = [...document.images]
+      .filter((i) => i.naturalWidth >= 250 && i.naturalHeight >= 180 && i.src.startsWith('http'))
+      .filter((i) => !/logo|icon|sprite|badge|payment/i.test(i.src + ' ' + (i.alt || '')))
+      .slice(0, 16)
+      .map((i, idx) => ({ index: idx, src: i.src, alt: i.alt || '', w: i.naturalWidth, h: i.naturalHeight }));
+    return {
+      title: document.title,
+      description: document.querySelector('meta[name="description"]')?.content || '',
+      fonts: [...styles].slice(0, 8),
+      colors: [...colors].slice(0, 15),
+      favicon: !!document.querySelector('link[rel*="icon"]'),
+      text: document.body.innerText.replace(/\s+/g, ' ').slice(0, 4000),
+      photos,
+    };
+  });
 }
