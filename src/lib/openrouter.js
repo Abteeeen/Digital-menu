@@ -52,6 +52,17 @@ async function chat(primaryModel, messages, { json = false, fallbacks = [] } = {
   throw lastErr;
 }
 
+/**
+ * Cap pageMeta.text before serializing so a long raw-text blob can never push
+ * pageMeta.photos out of the prompt — a flat slice(0, N) on the whole
+ * stringified object truncates whatever field happens to serialize last
+ * (photos, in insertion order), silently starving the model of photo data
+ * it needs for hero/item image matching and the layout decision.
+ */
+function trimForPrompt(pageMeta) {
+  return { ...pageMeta, text: (pageMeta.text || '').slice(0, 3000) };
+}
+
 /** Extract the first JSON object from a model reply (tolerates code fences). */
 function parseJson(text) {
   const m = text.match(/\{[\s\S]*\}/);
@@ -81,6 +92,10 @@ Return ONLY a JSON object with this exact shape:
     "font_style": "<'serif' | 'sans' | 'display'>",
     "cuisine": "<cuisine type>"
   },
+  "layout": "<one of 'grid-card' | 'list-ledger' | 'magazine-split'. First count N = how many of pageMeta.photos plausibly show real food/interior (not the raw array length — discard anything that looks like a logo, icon, banner, or unrelated stock image). Then decide by N first, brand personality only as a tie-breaker in the middle band — do NOT let brand vibe override the photo count at the extremes, a photo-led layout with nothing real to show is worse than a typographic one:
+    - N <= 2: ALWAYS 'list-ledger' (quiet, typographic printed-menu-card look, no reliance on photos) — there simply isn't enough real imagery to support a photo layout, regardless of brand.
+    - N >= 7: ALWAYS 'magazine-split' (bold, color-blocked, photo-led editorial layout with large alternating images) — there's enough real imagery to go bold and photo-led, regardless of brand.
+    - 3 <= N <= 6: pick using brand personality as the tie-breaker — 'list-ledger' if the brand reads quiet/classic/formal, 'magazine-split' if it reads vibrant/bold/casual, 'grid-card' (balanced photo-card grid) if personality is genuinely ambiguous or doesn't lean either way.>",
   "hero_image": <index from pageMeta.photos of the best atmospheric/hero-worthy photo, or null>,
   "menu": {
     "categories": [
@@ -92,7 +107,7 @@ Extract EVERY menu item you can read with its real price. If descriptions are mi
 pageMeta.photos lists real photos found on their site (index, src, alt, dimensions). Match photos to menu items via alt text / src filename / what you can see in the screenshot. Only assign an image when you're reasonably confident it shows that dish; never assign the same photo to more than one item.
 
 Page metadata:
-${JSON.stringify(pageMeta).slice(0, 6000)}`;
+${JSON.stringify(trimForPrompt(pageMeta))}`;
 
   const content = [
     { type: 'text', text: prompt },

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { launchBrowser } from '../lib/browser.js';
 import { config } from '../config.js';
 import { analyzeSite } from '../lib/openrouter.js';
+import { upsertLead } from '../lib/leads.js';
 
 /**
  * Stage 2 — Analysis & Extraction.
@@ -35,8 +36,21 @@ export async function analyze(lead) {
   analysis.captured_at = new Date().toISOString();
   analysis.low_confidence = !!pageMeta.low_content;
   analysis.qualified = analysis.ugliness_score >= config.uglinessThreshold && !analysis.low_confidence;
+  analysis.layout = pickLayout(pageMeta.photos.length, analysis.layout);
 
   await fs.writeFile(path.join(dir, 'analysis.json'), JSON.stringify(analysis, null, 2));
+  await upsertLead({
+    slug: lead.slug,
+    name: lead.name,
+    website: lead.website,
+    cuisine: analysis.brand?.cuisine || '',
+    analyzed_at: analysis.captured_at,
+    ugliness_score: analysis.ugliness_score,
+    qualified: analysis.qualified,
+    low_confidence: analysis.low_confidence,
+    layout: analysis.layout || '',
+    quirk: analysis.quirk || '',
+  });
   if (analysis.low_confidence) {
     console.log(
       `  ! ${lead.name}: page still looked near-empty after the retry — extraction is unreliable ` +
@@ -53,6 +67,20 @@ export async function analyze(lead) {
 }
 
 const MIN_CONTENT_CHARS = 200;
+const VALID_LAYOUTS = ['grid-card', 'list-ledger', 'magazine-split'];
+
+/**
+ * The model is asked to pick a layout from the real photo count itself, but
+ * it doesn't reliably obey "always X at the extremes" on every call (LLM
+ * judgment calls vary run to run). We already know the real, code-counted
+ * photo count here — enforce the boundaries deterministically and only let
+ * the model's taste decide the ambiguous middle band.
+ */
+function pickLayout(photoCount, modelChoice) {
+  if (photoCount <= 2) return 'list-ledger';
+  if (photoCount >= 7) return 'magazine-split';
+  return VALID_LAYOUTS.includes(modelChoice) ? modelChoice : 'grid-card';
+}
 
 async function capture(url) {
   const browser = await launchBrowser();
@@ -61,6 +89,13 @@ async function capture(url) {
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.waitForTimeout(3000); // let lazy content settle
+
+    // Menu photos are frequently lazy-loaded (IntersectionObserver-triggered
+    // <img loading="lazy">) and only get real dimensions once decoded, well
+    // after scroll triggers the load — a bare naturalWidth read right after
+    // scrolling is a race and undercounts real photos non-deterministically.
+    // Scroll through, then explicitly wait for images to finish loading.
+    await scrollAndWaitForImages(page);
 
     let pageMeta = await extractPageMeta(page);
 
@@ -97,6 +132,27 @@ async function capture(url) {
   }
 }
 
+async function scrollAndWaitForImages(page) {
+  await page.evaluate(async () => {
+    for (let y = 0; y < document.body.scrollHeight; y += 500) {
+      window.scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    window.scrollTo(0, 0);
+    await Promise.all(
+      [...document.images].map((img) =>
+        img.complete
+          ? Promise.resolve()
+          : new Promise((res) => {
+              img.addEventListener('load', res, { once: true });
+              img.addEventListener('error', res, { once: true });
+              setTimeout(res, 4000);
+            })
+      )
+    );
+  });
+}
+
 async function extractPageMeta(page) {
   return page.evaluate(() => {
     const styles = new Set();
@@ -107,13 +163,33 @@ async function extractPageMeta(page) {
       colors.add(cs.color);
       if (cs.backgroundColor !== 'rgba(0, 0, 0, 0)') colors.add(cs.backgroundColor);
     });
-    // Real content photos only: big enough to be food/interior shots,
-    // not logos, icons, or tracking pixels.
-    const photos = [...document.images]
-      .filter((i) => i.naturalWidth >= 250 && i.naturalHeight >= 180 && i.src.startsWith('http'))
+    // Real content photos only: big enough to be food/interior shots, not
+    // logos, icons, or tracking pixels. Kept deliberately low (120x90) since
+    // menu-builder platforms (Square, Wix) commonly serve dish thumbnails at
+    // ~150-160px wide — a 250px cutoff silently discards every real photo on
+    // those sites while still passing their (larger) logo image.
+    const fromImgTags = [...document.images]
+      .filter((i) => i.naturalWidth >= 120 && i.naturalHeight >= 90 && i.src.startsWith('http'))
       .filter((i) => !/logo|icon|sprite|badge|payment/i.test(i.src + ' ' + (i.alt || '')))
+      .map((i) => ({ src: i.src, alt: i.alt || '', w: i.naturalWidth, h: i.naturalHeight }));
+
+    // Menu-builder platforms (Square, Wix, etc.) often lay out dish tiles as
+    // CSS background-image divs rather than <img> tags, which the above
+    // misses entirely — undercounting real photos and pushing the layout
+    // choice (and hero/item photo matching) toward "no usable photos" when
+    // there actually are some.
+    const bgUrl = /url\((['"]?)(https?:\/\/[^'")]+)\1\)/;
+    const fromBackgrounds = [...document.querySelectorAll('*')]
+      .filter((el) => el.clientWidth >= 120 && el.clientHeight >= 90)
+      .map((el) => ({ el, m: bgUrl.exec(getComputedStyle(el).backgroundImage) }))
+      .filter((x) => x.m && !/logo|icon|sprite|badge|payment/i.test(x.m[2] + ' ' + (x.el.getAttribute('aria-label') || '')))
+      .map((x) => ({ src: x.m[2], alt: x.el.getAttribute('aria-label') || '', w: x.el.clientWidth, h: x.el.clientHeight }));
+
+    const seen = new Set();
+    const photos = [...fromImgTags, ...fromBackgrounds]
+      .filter((p) => (seen.has(p.src) ? false : (seen.add(p.src), true)))
       .slice(0, 16)
-      .map((i, idx) => ({ index: idx, src: i.src, alt: i.alt || '', w: i.naturalWidth, h: i.naturalHeight }));
+      .map((p, idx) => ({ index: idx, ...p }));
     return {
       title: document.title,
       description: document.querySelector('meta[name="description"]')?.content || '',

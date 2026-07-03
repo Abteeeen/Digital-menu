@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#101314">
+<title>Menu</title>
+<style>
+  :root {
+    --primary: #1f6b4a;
+    --accent: #e8b13a;
+    --bg: #101314;
+    --card: rgba(255,255,255,.055);
+    --line: rgba(255,255,255,.1);
+    --text: #f3f5f0;
+    --muted: #a7b0a8;
+    --serif: Georgia, 'Times New Roman', serif;
+    --sans: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --ease: cubic-bezier(.22,.85,.28,1);
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg); color: var(--text); font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    max-width: 560px; margin: 0 auto; min-height: 100vh; padding-bottom: calc(60px + var(--safe-b));
+  }
+
+  /* ---- masthead: bold color block ---- */
+  .masthead {
+    background: linear-gradient(155deg, var(--primary), color-mix(in srgb, var(--primary) 55%, #000));
+    padding: 54px 24px 40px; position: relative; overflow: hidden;
+  }
+  .masthead::after {
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(135deg, rgba(255,255,255,.04) 0 2px, transparent 2px 14px);
+  }
+  .eyebrow { position: relative; font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: color-mix(in srgb, var(--accent) 80%, white); }
+  h1 {
+    position: relative; font-family: var(--serif); font-weight: 800; font-size: clamp(32px, 11vw, 52px);
+    line-height: .98; margin-top: 10px; letter-spacing: -.01em; color: #fff;
+  }
+  h1 .cuisine { color: var(--accent); }
+  .tagline { position: relative; margin-top: 14px; font-size: 13px; color: rgba(255,255,255,.78); max-width: 30ch; }
+
+  /* ---- chrome ---- */
+  .chrome {
+    position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 75%, transparent);
+    backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); padding: 12px 0 0;
+  }
+  .search { margin: 0 20px 10px; position: relative; }
+  .search input {
+    width: 100%; background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    color: var(--text); font: 400 14.5px var(--sans); padding: 12px 14px 12px 40px; outline: none;
+  }
+  .search input:focus { border-color: var(--accent); }
+  .search svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; stroke: var(--muted); fill: none; stroke-width: 2; }
+  nav { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 20px 13px; }
+  nav::-webkit-scrollbar { display: none; }
+  nav button {
+    flex: 0 0 auto; border: 1px solid var(--line); background: transparent;
+    color: var(--muted); font: 700 11px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase;
+    padding: 9px 15px; border-radius: 999px; cursor: pointer; transition: .18s;
+  }
+  nav button.on { background: var(--accent); border-color: var(--accent); color: #16130a; }
+
+  /* ---- feature spread ---- */
+  section { padding: 4px 0 8px; }
+  h2 {
+    font-family: var(--serif); font-weight: 800; font-size: 22px; padding: 0 22px; margin: 26px 0 12px;
+    color: var(--text);
+  }
+
+  .feature {
+    display: grid; grid-template-columns: 128px 1fr; gap: 14px; padding: 14px 22px;
+    opacity: 0; transform: translateX(-12px);
+    transition: opacity .5s var(--ease), transform .5s var(--ease);
+    align-items: start;
+  }
+  .feature.in { opacity: 1; transform: none; }
+  .feature:nth-child(even) { direction: rtl; }
+  .feature:nth-child(even) > * { direction: ltr; }
+  .feature .art {
+    width: 128px; height: 128px; border-radius: 10px; overflow: hidden; flex-shrink: 0;
+    background: var(--card); position: relative; box-shadow: 0 10px 26px -12px rgba(0,0,0,.6);
+  }
+  .feature .art img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .5s var(--ease); }
+  .feature .art img.loaded { opacity: 1; }
+  .feature .art.empty { display: flex; align-items: center; justify-content: center; font-family: var(--serif); font-size: 30px; color: var(--muted); }
+  .feature .body h3 { font-family: var(--serif); font-weight: 700; font-size: 16.5px; line-height: 1.2; }
+  .feature .body p { font-size: 12.5px; color: var(--muted); line-height: 1.55; margin-top: 6px; }
+  .feature .body .price {
+    display: inline-block; margin-top: 9px; font-family: var(--serif); font-weight: 700; font-size: 13.5px;
+    color: var(--accent); border-bottom: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+
+  .empty { text-align: center; color: var(--muted); font-size: 13px; padding: 60px 0; }
+  footer { text-align: center; color: var(--muted); font-size: 10.5px; letter-spacing: .14em; padding: 46px 0 8px; text-transform: uppercase; }
+
+  .top {
+    position: fixed; right: 16px; bottom: calc(20px + var(--safe-b)); z-index: 30;
+    width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line);
+    background: color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    opacity: 0; transform: translateY(10px) scale(.9); pointer-events: none;
+    transition: opacity .3s var(--ease), transform .3s var(--ease);
+  }
+  .top.show { opacity: 1; transform: none; pointer-events: auto; }
+  .top svg { width: 16px; height: 16px; stroke: var(--text); fill: none; stroke-width: 2.4; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+    html { scroll-behavior: auto; }
+    .feature { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+<div class="masthead">
+  <div class="eyebrow" id="eyebrow"></div>
+  <h1 id="name"></h1>
+  <div class="tagline" id="tagline"></div>
+</div>
+<div class="chrome">
+  <div class="search">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+    <input id="q" type="search" placeholder="Search the menu…" autocomplete="off" aria-label="Search the menu">
+  </div>
+  <nav id="nav" aria-label="Menu categories"></nav>
+</div>
+<section id="menu"></section>
+<footer id="foot"></footer>
+<button class="top" id="top" aria-label="Back to top">
+  <svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+<script>
+const DATA = /*__MENU_DATA__*/null;
+(function () {
+  const { brand, menu } = DATA;
+  const r = document.documentElement.style;
+  if (brand.primary_color) r.setProperty('--primary', brand.primary_color);
+  if (brand.accent_color) r.setProperty('--accent', brand.accent_color);
+  if (brand.font_style === 'sans') r.setProperty('--serif', 'var(--sans)');
+
+  document.title = brand.name + ' — Menu';
+  document.getElementById('name').innerHTML = brand.name;
+  document.getElementById('eyebrow').textContent = brand.cuisine || 'The Menu';
+  document.getElementById('tagline').textContent = brand.tagline || '';
+  document.getElementById('foot').textContent = brand.name + ' · digital menu';
+
+  const nav = document.getElementById('nav');
+  const menuEl = document.getElementById('menu');
+  const q = document.getElementById('q');
+  const cats = menu.categories || [];
+  let active = 0;
+
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const io = 'IntersectionObserver' in window && !reduceMotion
+    ? new IntersectionObserver((entries) => {
+        entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+      }, { rootMargin: '0px 0px -8% 0px', threshold: .05 })
+    : null;
+
+  function feature(it, delay) {
+    const d = document.createElement('div');
+    d.className = 'feature';
+    if (!io) d.classList.add('in');
+    d.style.transitionDelay = io ? Math.min(delay * 45, 320) + 'ms' : '0ms';
+    if (io) setTimeout(() => d.classList.add('in'), 1200 + delay * 45);
+
+    const art = document.createElement('div');
+    art.className = 'art' + (it.image ? '' : ' empty');
+    if (it.image) {
+      const img = document.createElement('img');
+      img.src = it.image;
+      img.alt = it.name;
+      img.loading = 'lazy';
+      img.onload = () => img.classList.add('loaded');
+      art.appendChild(img);
+    } else {
+      art.textContent = (it.name || '?')[0].toUpperCase();
+    }
+    d.appendChild(art);
+
+    const body = document.createElement('div');
+    body.className = 'body';
+    body.innerHTML = '<h3></h3><p></p>';
+    body.querySelector('h3').textContent = it.name;
+    body.querySelector('p').textContent = it.description || '';
+    if (!it.description) body.querySelector('p').remove();
+    if (it.price) {
+      const price = document.createElement('span');
+      price.className = 'price';
+      price.textContent = it.price;
+      body.appendChild(price);
+    }
+    d.appendChild(body);
+    if (io) io.observe(d);
+    return d;
+  }
+
+  function render() {
+    menuEl.innerHTML = '';
+    const term = q.value.trim().toLowerCase();
+    if (term) {
+      let n = 0;
+      for (const c of cats) {
+        const hits = c.items.filter((it) =>
+          (it.name + ' ' + (it.description || '')).toLowerCase().includes(term));
+        if (!hits.length) continue;
+        const h = document.createElement('h2');
+        h.textContent = c.name;
+        menuEl.appendChild(h);
+        hits.forEach((it) => menuEl.appendChild(feature(it, n++)));
+      }
+      if (!n) menuEl.innerHTML = '<div class="empty">Nothing matches “' + term.replace(/</g, '&lt;') + '”</div>';
+      return;
+    }
+    [...nav.children].forEach((b, i) => b.classList.toggle('on', i === active));
+    const c = cats[active];
+    if (!c) return;
+    const h = document.createElement('h2');
+    h.textContent = c.name;
+    menuEl.appendChild(h);
+    c.items.forEach((it, i) => menuEl.appendChild(feature(it, i)));
+  }
+
+  cats.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.textContent = c.name;
+    b.onclick = () => { q.value = ''; active = i; render(); window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }); };
+    nav.appendChild(b);
+  });
+  q.addEventListener('input', render);
+  render();
+
+  const topBtn = document.getElementById('top');
+  window.addEventListener('scroll', () => {
+    topBtn.classList.toggle('show', window.scrollY > 480);
+  }, { passive: true });
+  topBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }));
+})();
+</script>
+</body>
+</html>
