@@ -24,6 +24,7 @@ const COLUMNS = [
   'ugliness_score',
   'qualified',
   'low_confidence',
+  'skip_reason',
   'layout',
   'quirk',
   'review',

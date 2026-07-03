@@ -21,6 +21,35 @@ export async function analyze(lead) {
   const beforePath = path.join(dir, 'before.png');
   await fs.writeFile(beforePath, screenshot);
 
+  // Bot-challenge/error pages (Cloudflare "Just a moment...", 4xx/5xx) can't
+  // yield a real menu no matter how good the vision model is — burning an
+  // API call scoring a screenshot of a challenge page is pure waste. Bail
+  // with a minimal, clearly-flagged result before ever calling analyzeSite().
+  if (pageMeta.block_reason) {
+    const analysis = {
+      captured_at: new Date().toISOString(),
+      skip_reason: pageMeta.block_reason,
+      low_confidence: true,
+      qualified: false,
+      ugliness_score: null,
+      layout: null,
+      brand: {},
+      menu: { categories: [] },
+    };
+    await fs.writeFile(path.join(dir, 'analysis.json'), JSON.stringify(analysis, null, 2));
+    await upsertLead({
+      slug: lead.slug,
+      name: lead.name,
+      website: lead.website,
+      analyzed_at: analysis.captured_at,
+      qualified: false,
+      low_confidence: true,
+      skip_reason: analysis.skip_reason,
+    });
+    console.log(`  ! ${lead.name}: site returned a bot-challenge/error page (${pageMeta.block_reason}) — skipping vision analysis`);
+    return analysis;
+  }
+
   // Save their real photos as assets for the rebuild.
   const assetsDir = path.join(dir, 'assets');
   await fs.mkdir(assetsDir, { recursive: true });
@@ -35,6 +64,7 @@ export async function analyze(lead) {
   });
   analysis.captured_at = new Date().toISOString();
   analysis.low_confidence = !!pageMeta.low_content;
+  analysis.skip_reason = pageMeta.low_content && pageMeta.pdf_menu_signal ? 'pdf_only_menu' : null;
   analysis.qualified = analysis.ugliness_score >= config.uglinessThreshold && !analysis.low_confidence;
   analysis.layout = pickLayout(pageMeta.photos.length, analysis.layout);
 
@@ -48,6 +78,7 @@ export async function analyze(lead) {
     ugliness_score: analysis.ugliness_score,
     qualified: analysis.qualified,
     low_confidence: analysis.low_confidence,
+    skip_reason: analysis.skip_reason || '',
     layout: analysis.layout || '',
     quirk: analysis.quirk || '',
   });
@@ -68,6 +99,15 @@ export async function analyze(lead) {
 
 const MIN_CONTENT_CHARS = 200;
 const VALID_LAYOUTS = ['grid-card', 'list-ledger', 'magazine-split'];
+const BLOCK_TITLE_RE = /just a moment|attention required|checking your browser|please verify|are you (a )?human|access denied|request blocked/i;
+
+/** Sites behind bot-challenge walls (Cloudflare, etc.) or returning an HTTP
+ * error can't yield a real menu — detect it so we skip the vision call. */
+function detectBlockReason(status, title, text) {
+  if (BLOCK_TITLE_RE.test(title || '') || BLOCK_TITLE_RE.test((text || '').slice(0, 300))) return 'bot_challenge';
+  if (status && status >= 400) return `http_error_${status}`;
+  return null;
+}
 
 /**
  * The model is asked to pick a layout from the real photo count itself, but
@@ -87,7 +127,7 @@ async function capture(url) {
   try {
     // Mobile viewport: we judge (and rebuild) the mobile experience.
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    const resp = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.waitForTimeout(3000); // let lazy content settle
 
     // Menu photos are frequently lazy-loaded (IntersectionObserver-triggered
@@ -98,6 +138,8 @@ async function capture(url) {
     await scrollAndWaitForImages(page);
 
     let pageMeta = await extractPageMeta(page);
+    pageMeta.block_reason = detectBlockReason(resp?.status(), pageMeta.title, pageMeta.text);
+    if (pageMeta.block_reason) return { screenshot: await page.screenshot({ fullPage: true }), pageMeta, photoFiles: [] };
 
     // Some sites (SPAs, order-ahead widgets, etc.) return a real 200 with a
     // DOM that's still nearly empty at this point — the menu hasn't rendered
@@ -185,11 +227,35 @@ async function extractPageMeta(page) {
       .filter((x) => x.m && !/logo|icon|sprite|badge|payment/i.test(x.m[2] + ' ' + (x.el.getAttribute('aria-label') || '')))
       .map((x) => ({ src: x.m[2], alt: x.el.getAttribute('aria-label') || '', w: x.el.clientWidth, h: x.el.clientHeight }));
 
-    const seen = new Set();
-    const photos = [...fromImgTags, ...fromBackgrounds]
-      .filter((p) => (seen.has(p.src) ? false : (seen.add(p.src), true)))
-      .slice(0, 16)
-      .map((p, idx) => ({ index: idx, ...p }));
+    // CDNs (Square, Wix, etc.) commonly serve the same dish photo at several
+    // resized URLs (?width=160 vs ?width=800) — exact-string dedup would
+    // count those as separate candidates, wasting slots in the 16-photo cap
+    // and diluting the pool the model matches against. Normalize away known
+    // size/quality params before deduping, keeping the larger variant.
+    function normalizeSrc(src) {
+      try {
+        const u = new URL(src, location.href);
+        ['width', 'height', 'w', 'h', 'size', 'quality', 'q', 'resize', 'fit', 'dpr'].forEach((k) => u.searchParams.delete(k));
+        const qs = u.searchParams.toString();
+        return u.origin + u.pathname + (qs ? '?' + qs : '');
+      } catch {
+        return src;
+      }
+    }
+    const bestBySrc = new Map();
+    for (const p of [...fromImgTags, ...fromBackgrounds]) {
+      const key = normalizeSrc(p.src);
+      const existing = bestBySrc.get(key);
+      if (!existing || p.w * p.h > existing.w * existing.h) bestBySrc.set(key, p);
+    }
+    const photos = [...bestBySrc.values()].slice(0, 16).map((p, idx) => ({ index: idx, ...p }));
+
+    // A menu that's just an embedded/linked PDF gives near-empty extractable
+    // text — this signal lets low-content reporting say *why* rather than a
+    // generic "low_confidence".
+    const pdf_menu_signal = !!document.querySelector('embed[type="application/pdf"], iframe[src$=".pdf" i], object[data$=".pdf" i]')
+      || [...document.querySelectorAll('a[href$=".pdf" i]')].some((a) => /menu/i.test(a.textContent + ' ' + a.href));
+
     return {
       title: document.title,
       description: document.querySelector('meta[name="description"]')?.content || '',
@@ -198,6 +264,7 @@ async function extractPageMeta(page) {
       favicon: !!document.querySelector('link[rel*="icon"]'),
       text: document.body.innerText.replace(/\s+/g, ' ').slice(0, 4000),
       photos,
+      pdf_menu_signal,
     };
   });
 }

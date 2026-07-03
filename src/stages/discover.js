@@ -3,6 +3,25 @@ import path from 'node:path';
 import { config, slugify } from '../config.js';
 import { upsertLead } from '../lib/leads.js';
 
+// Sites we know we can't scrape meaningfully: Facebook-page-only "websites"
+// (login-walled, not a real menu site) and third-party POS/ordering-widget
+// or auto-generated directory pages that aren't the restaurant's own
+// branding. Catching these here (free, no network) avoids burning a full
+// browser + vision-API cycle on near-certain garbage.
+const INELIGIBLE_HOSTS = [
+  { reason: 'facebook_only', re: /(^|\.)facebook\.com$|(^|\.)fb\.com$/i },
+  { reason: 'third_party_widget', re: /(^|\.)toasttab\.com$|(^|\.)chowbus\.com$|(^|\.)edan\.io$|(^|\.)placeid\.site$/i },
+];
+function ineligibleReason(websiteUrl) {
+  let host;
+  try {
+    host = new URL(websiteUrl).hostname;
+  } catch {
+    return null;
+  }
+  return INELIGIBLE_HOSTS.find(({ re }) => re.test(host))?.reason || null;
+}
+
 /**
  * Stage 1 — Discovery.
  * Finds US restaurants with websites via Google Places Text Search (New),
@@ -27,6 +46,7 @@ export async function discover({ query = 'restaurants', city = 'Austin, TX', lim
   for (const lead of leads) {
     if (!lead.website) continue;
     lead.slug = slugify(lead.name);
+    lead.skip_reason = ineligibleReason(lead.website);
     const dir = path.join(config.outDir, lead.slug);
     await fs.mkdir(dir, { recursive: true });
     await fs.writeFile(path.join(dir, 'lead.json'), JSON.stringify(lead, null, 2));
@@ -39,7 +59,12 @@ export async function discover({ query = 'restaurants', city = 'Austin, TX', lim
       cuisine: lead.cuisine || '',
       source,
       discovered_at: new Date().toISOString(),
+      skip_reason: lead.skip_reason || '',
     });
+    if (lead.skip_reason) {
+      console.log(`  x ${lead.name} — ${lead.website} (skipped: ${lead.skip_reason})`);
+      continue; // don't burn a browser+vision-API cycle on a known-ineligible site
+    }
     saved.push(lead);
     console.log(`  + ${lead.name} — ${lead.website}`);
   }
