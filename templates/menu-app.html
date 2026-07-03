@@ -3,100 +3,169 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#17130f">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0e0c0a">
 <title>Menu</title>
 <style>
   :root {
     --primary: #b33a2e;
     --accent: #d4a15a;
-    --bg: #17130f;
-    --card: rgba(255,255,255,.05);
-    --line: rgba(255,255,255,.08);
-    --text: #f2ece2;
+    --bg: #0e0c0a;
+    --card: rgba(255,255,255,.045);
+    --card-hi: rgba(255,255,255,.075);
+    --line: rgba(255,255,255,.09);
+    --text: #f5f0e6;
     --muted: #a89e8f;
     --serif: Georgia, 'Times New Roman', serif;
     --sans: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --ease: cubic-bezier(.22,.85,.28,1);
+    --safe-b: env(safe-area-inset-bottom, 0px);
   }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html { scroll-behavior: smooth; }
+  ::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); }
   body {
     background: var(--bg); color: var(--text); font-family: var(--sans);
-    -webkit-font-smoothing: antialiased;
-    max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: 70px;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+    max-width: 520px; margin: 0 auto; min-height: 100vh; padding-bottom: calc(64px + var(--safe-b));
+    position: relative; overflow-x: clip;
+  }
+  /* film-grain wash for depth, cheap + zero-dependency */
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: .05; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
+  /* ---- progress rail ---- */
+  .progress { position: fixed; top: 0; left: 0; height: 2px; width: 0%; z-index: 40;
+    background: linear-gradient(90deg, var(--accent), var(--primary)); transition: width .08s linear; }
+
   /* ---- hero ---- */
-  .hero { position: relative; min-height: 280px; display: flex; align-items: flex-end; overflow: hidden; }
+  .hero { position: relative; min-height: 320px; display: flex; align-items: flex-end; overflow: hidden; }
   .hero .bg {
-    position: absolute; inset: 0; background-size: cover; background-position: center;
-    transform: scale(1.05); filter: saturate(1.05);
+    position: absolute; inset: -8% -8%; background-size: cover; background-position: center;
+    transform: scale(1.08) translateY(0); filter: saturate(1.08); will-change: transform;
   }
   .hero .bg.fallback {
-    background: radial-gradient(120% 90% at 20% 0%,
-      color-mix(in srgb, var(--primary) 55%, var(--bg)) 0%, var(--bg) 70%);
+    background:
+      radial-gradient(85% 60% at 12% -10%, color-mix(in srgb, var(--primary) 60%, transparent) 0%, transparent 60%),
+      radial-gradient(75% 55% at 105% 0%, color-mix(in srgb, var(--accent) 45%, transparent) 0%, transparent 55%),
+      var(--bg);
+    animation: drift 16s ease-in-out infinite alternate;
   }
-  .hero .shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.15) 0%, color-mix(in srgb, var(--bg) 92%, transparent) 78%, var(--bg) 100%); }
-  .hero .inner { position: relative; width: 100%; padding: 60px 24px 22px; text-align: center; animation: rise .7s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes drift { from { filter: hue-rotate(0deg) saturate(1); } to { filter: hue-rotate(6deg) saturate(1.15); } }
+  .hero .shade {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,.2) 0%, color-mix(in srgb, var(--bg) 55%, transparent) 55%, var(--bg) 100%);
+  }
+  .hero .inner { position: relative; z-index: 2; width: 100%; padding: 68px 26px 26px; text-align: center; animation: rise .8s var(--ease) both; }
   .mark {
-    width: 58px; height: 58px; margin: 0 auto 12px; border-radius: 50%;
-    background: var(--primary); display: flex; align-items: center; justify-content: center;
+    width: 60px; height: 60px; margin: 0 auto 14px; border-radius: 50%;
+    background: linear-gradient(155deg, var(--primary), color-mix(in srgb, var(--primary) 60%, #000));
+    display: flex; align-items: center; justify-content: center;
     font-family: var(--serif); font-size: 27px; color: #fff;
-    box-shadow: 0 8px 30px color-mix(in srgb, var(--primary) 50%, transparent);
+    box-shadow: 0 10px 34px color-mix(in srgb, var(--primary) 55%, transparent), inset 0 0 0 1px rgba(255,255,255,.14);
   }
-  h1 { font-family: var(--serif); font-weight: 500; font-size: 33px; letter-spacing: .2em; text-transform: uppercase; text-shadow: 0 2px 18px rgba(0,0,0,.5); }
-  .tagline { color: var(--muted); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; margin-top: 7px; }
-  .rule { width: 44px; height: 2px; background: var(--accent); margin: 16px auto 0; }
+  h1 {
+    font-family: var(--serif); font-weight: 500; letter-spacing: .18em; text-transform: uppercase;
+    font-size: clamp(24px, 7.2vw, 36px); text-shadow: 0 2px 22px rgba(0,0,0,.55);
+  }
+  .tagline { color: var(--muted); font-size: clamp(11px, 3vw, 12.5px); letter-spacing: .16em; text-transform: uppercase; margin-top: 8px; }
+  .rule { width: 46px; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); margin: 18px auto 0; }
 
   /* ---- sticky glass nav + search ---- */
   .chrome {
     position: sticky; top: 0; z-index: 10;
-    background: color-mix(in srgb, var(--bg) 72%, transparent);
-    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    border-bottom: 1px solid var(--line); padding: 10px 0 0;
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+    backdrop-filter: blur(16px) saturate(1.3); -webkit-backdrop-filter: blur(16px) saturate(1.3);
+    border-bottom: 1px solid var(--line); padding: 12px 0 0;
   }
   .search { margin: 0 20px 10px; position: relative; }
   .search input {
-    width: 100%; background: var(--card); border: 1px solid var(--line); border-radius: 12px;
-    color: var(--text); font: 400 14px var(--sans); padding: 11px 14px 11px 38px; outline: none;
-    transition: border-color .2s;
+    width: 100%; background: var(--card); border: 1px solid var(--line); border-radius: 13px;
+    color: var(--text); font: 400 14.5px var(--sans); padding: 12px 14px 12px 40px; outline: none;
+    transition: border-color .2s var(--ease), background .2s var(--ease);
   }
-  .search input:focus { border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
-  .search svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; stroke: var(--muted); fill: none; stroke-width: 2; }
-  nav { display: flex; gap: 8px; overflow-x: auto; padding: 2px 20px 12px; scrollbar-width: none; }
+  .search input:focus { border-color: color-mix(in srgb, var(--accent) 65%, transparent); background: var(--card-hi); }
+  .search svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; stroke: var(--muted); fill: none; stroke-width: 2; pointer-events: none; }
+  .navwrap { position: relative; padding: 2px 20px 13px; }
+  nav { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; position: relative; }
   nav::-webkit-scrollbar { display: none; }
   nav button {
-    flex: 0 0 auto; border: 1px solid var(--line); background: transparent;
-    color: var(--muted); font: 600 11.5px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase;
-    padding: 10px 15px; border-radius: 999px; cursor: pointer; transition: .18s;
+    flex: 0 0 auto; border: 1px solid transparent; background: transparent; position: relative; z-index: 1;
+    color: var(--muted); font: 600 11.5px/1 var(--sans); letter-spacing: .07em; text-transform: uppercase;
+    padding: 10px 16px; border-radius: 999px; cursor: pointer; transition: color .25s var(--ease);
   }
-  nav button.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+  nav button.on { color: #fff; }
+  .pill {
+    position: absolute; top: 2px; height: 38px; border-radius: 999px; z-index: 0;
+    background: linear-gradient(155deg, var(--primary), color-mix(in srgb, var(--primary) 55%, #000));
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--primary) 45%, transparent);
+    transition: transform .38s var(--ease), width .38s var(--ease); will-change: transform, width;
+  }
 
   /* ---- items ---- */
-  section { padding: 8px 20px; }
-  h2 { font-family: var(--serif); font-weight: 500; font-size: 19px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin: 24px 0 2px; }
+  section { padding: 6px 20px; }
+  h2 {
+    font-family: var(--serif); font-weight: 500; font-size: 18.5px; letter-spacing: .11em; text-transform: uppercase;
+    color: var(--accent); margin: 26px 0 4px; display: flex; align-items: center; gap: 10px;
+  }
+  h2::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--line), transparent); }
   .item {
-    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
-    margin-top: 12px; overflow: hidden;
-    animation: rise .5s cubic-bezier(.2,.7,.2,1) both;
+    background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+    margin-top: 12px; overflow: hidden; opacity: 0; transform: translateY(16px) scale(.99);
+    transition: opacity .55s var(--ease), transform .55s var(--ease), border-color .25s, background .25s;
   }
-  .item .photo { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
-  .item .txt { padding: 14px 16px 15px; display: flex; justify-content: space-between; gap: 14px; align-items: baseline; }
-  .item h3 { font-size: 15.5px; font-weight: 600; }
-  .item p { color: var(--muted); font-size: 13px; line-height: 1.5; margin-top: 5px; }
+  .item.in { opacity: 1; transform: none; }
+  .item:active { transform: scale(.985); background: var(--card-hi); }
+  .item .photowrap { position: relative; aspect-ratio: 16/10; overflow: hidden; background: var(--card); }
+  .item .photo {
+    width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0;
+    transition: opacity .5s var(--ease), transform .6s var(--ease);
+  }
+  .item .photo.loaded { opacity: 1; }
+  .item:active .photo { transform: scale(1.025); }
+  .item .photowrap::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 55%, color-mix(in srgb, var(--bg) 70%, transparent) 100%);
+  }
+  .item .txt { padding: 15px 17px 16px; display: flex; justify-content: space-between; gap: 14px; align-items: baseline; }
+  .item h3 { font-size: 15.5px; font-weight: 650; letter-spacing: .01em; }
+  .item p { color: var(--muted); font-size: 13px; line-height: 1.55; margin-top: 5px; }
   .price {
-    font-family: var(--serif); color: var(--accent); font-size: 15px; white-space: nowrap;
+    font-family: var(--serif); color: var(--accent); font-size: 14.5px; white-space: nowrap; flex: 0 0 auto;
     background: color-mix(in srgb, var(--accent) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
-    padding: 4px 10px; border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+    padding: 5px 11px; border-radius: 999px;
   }
-  .empty { text-align: center; color: var(--muted); font-size: 13px; padding: 40px 0; }
-  footer { text-align: center; color: var(--muted); font-size: 10.5px; letter-spacing: .14em; padding: 44px 0 8px; text-transform: uppercase; }
+  .empty { text-align: center; color: var(--muted); font-size: 13px; padding: 60px 0; animation: rise .5s var(--ease) both; }
+  footer { text-align: center; color: var(--muted); font-size: 10.5px; letter-spacing: .14em; padding: 48px 0 8px; text-transform: uppercase; }
+
+  /* ---- back to top ---- */
+  .top {
+    position: fixed; right: 16px; bottom: calc(20px + var(--safe-b)); z-index: 30;
+    width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line);
+    background: color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    opacity: 0; transform: translateY(10px) scale(.9); pointer-events: none;
+    transition: opacity .3s var(--ease), transform .3s var(--ease);
+    box-shadow: 0 8px 22px rgba(0,0,0,.35);
+  }
+  .top.show { opacity: 1; transform: none; pointer-events: auto; }
+  .top svg { width: 16px; height: 16px; stroke: var(--text); fill: none; stroke-width: 2.4; }
 
   @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } html { scroll-behavior: auto; } }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+    html { scroll-behavior: auto; }
+    .item { opacity: 1; transform: none; }
+    .item .photo { opacity: 1; }
+  }
+  ::view-transition-old(menu-list), ::view-transition-new(menu-list) { animation-duration: .32s; }
 </style>
 </head>
 <body>
+<div class="progress" id="progress"></div>
 <div class="hero">
   <div class="bg fallback" id="heroBg"></div>
   <div class="shade"></div>
@@ -110,12 +179,17 @@
 <div class="chrome">
   <div class="search">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
-    <input id="q" type="search" placeholder="Search the menu…" autocomplete="off">
+    <input id="q" type="search" placeholder="Search the menu…" autocomplete="off" aria-label="Search the menu">
   </div>
-  <nav id="nav"></nav>
+  <div class="navwrap">
+    <nav id="nav" aria-label="Menu categories"></nav>
+  </div>
 </div>
-<section id="menu"></section>
+<section id="menu" style="view-transition-name: menu-list;"></section>
 <footer id="foot"></footer>
+<button class="top" id="top" aria-label="Back to top">
+  <svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
 <script>
 const DATA = /*__MENU_DATA__*/null;
 (function () {
@@ -125,6 +199,32 @@ const DATA = /*__MENU_DATA__*/null;
   if (brand.accent_color) r.setProperty('--accent', brand.accent_color);
   if (brand.bg_color) r.setProperty('--bg', brand.bg_color);
   if (brand.font_style === 'sans') r.setProperty('--serif', 'var(--sans)');
+
+  // Extracted brand.bg_color can land light OR dark — flip the text/surface
+  // palette to match so a light-themed site doesn't render pale text on a
+  // pale background (the --text/--card/--line defaults above assume dark).
+  const bgRgb = hexToRgb(brand.bg_color);
+  if (bgRgb && relativeLuminance(bgRgb) > 0.5) {
+    r.setProperty('--text', '#221f1b');
+    r.setProperty('--muted', '#6f665a');
+    r.setProperty('--card', 'rgba(0,0,0,.035)');
+    r.setProperty('--card-hi', 'rgba(0,0,0,.065)');
+    r.setProperty('--line', 'rgba(0,0,0,.1)');
+    document.querySelector('meta[name="color-scheme"]').content = 'light';
+  }
+  document.querySelector('meta[name="theme-color"]').content = brand.bg_color || '#0e0c0a';
+
+  function hexToRgb(hex) {
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '');
+    return m ? [1, 2, 3].map((i) => parseInt(m[i], 16)) : null;
+  }
+  function relativeLuminance([r, g, b]) {
+    const [rl, gl, bl] = [r, g, b].map((v) => {
+      v /= 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * rl + 0.7152 * gl + 0.0722 * bl;
+  }
 
   document.title = brand.name + ' — Menu';
   document.getElementById('name').textContent = brand.name;
@@ -138,22 +238,36 @@ const DATA = /*__MENU_DATA__*/null;
   }
 
   const nav = document.getElementById('nav');
+  const pill = document.createElement('div');
+  pill.className = 'pill';
   const menuEl = document.getElementById('menu');
   const q = document.getElementById('q');
   const cats = menu.categories || [];
   let active = 0;
 
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const io = 'IntersectionObserver' in window && !reduceMotion
+    ? new IntersectionObserver((entries) => {
+        entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+      }, { rootMargin: '0px 0px -8% 0px', threshold: .08 })
+    : null;
+
   function card(it, delay) {
     const d = document.createElement('div');
     d.className = 'item';
-    d.style.animationDelay = (delay * 45) + 'ms';
+    if (!io) d.classList.add('in');
+    d.style.transitionDelay = io ? Math.min(delay * 45, 360) + 'ms' : '0ms';
     if (it.image) {
+      const wrap = document.createElement('div');
+      wrap.className = 'photowrap';
       const img = document.createElement('img');
       img.className = 'photo';
       img.src = it.image;
       img.alt = it.name;
       img.loading = 'lazy';
-      d.appendChild(img);
+      img.onload = () => img.classList.add('loaded');
+      wrap.appendChild(img);
+      d.appendChild(wrap);
     }
     const t = document.createElement('div');
     t.className = 'txt';
@@ -164,10 +278,17 @@ const DATA = /*__MENU_DATA__*/null;
     if (!it.description) t.querySelector('p').remove();
     if (!it.price) t.querySelector('.price').remove();
     d.appendChild(t);
+    if (io) io.observe(d);
     return d;
   }
 
-  function render() {
+  function movePill(btn) {
+    if (!btn) { pill.style.width = '0px'; return; }
+    pill.style.width = btn.offsetWidth + 'px';
+    pill.style.transform = 'translateX(' + btn.offsetLeft + 'px)';
+  }
+
+  function renderList() {
     menuEl.innerHTML = '';
     const term = q.value.trim().toLowerCase();
     if (term) {
@@ -182,9 +303,11 @@ const DATA = /*__MENU_DATA__*/null;
         hits.forEach((it) => menuEl.appendChild(card(it, n++)));
       }
       if (!n) menuEl.innerHTML = '<div class="empty">Nothing matches “' + term.replace(/</g, '&lt;') + '”</div>';
+      movePill(null);
       return;
     }
-    [...nav.children].forEach((b, i) => b.classList.toggle('on', i === active));
+    [...nav.children].forEach((b) => { if (b !== pill) b.classList.toggle('on', b.dataset.i == active); });
+    movePill(nav.querySelector('button.on'));
     const c = cats[active];
     if (!c) return;
     const h = document.createElement('h2');
@@ -193,14 +316,38 @@ const DATA = /*__MENU_DATA__*/null;
     c.items.forEach((it, i) => menuEl.appendChild(card(it, i)));
   }
 
+  function render() {
+    if (document.startViewTransition && !reduceMotion) document.startViewTransition(renderList);
+    else renderList();
+  }
+
   cats.forEach((c, i) => {
     const b = document.createElement('button');
     b.textContent = c.name;
-    b.onclick = () => { q.value = ''; active = i; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+    b.dataset.i = i;
+    b.onclick = () => { q.value = ''; active = i; render(); window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }); };
     nav.appendChild(b);
   });
+  nav.appendChild(pill);
   q.addEventListener('input', render);
+  window.addEventListener('resize', () => movePill(nav.querySelector('button.on')));
   render();
+
+  // scroll progress + back-to-top
+  const progress = document.getElementById('progress');
+  const topBtn = document.getElementById('top');
+  const heroBg = document.getElementById('heroBg');
+  let ticking = false;
+  function onScroll() {
+    const y = window.scrollY;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    progress.style.width = (max > 0 ? (y / max) * 100 : 0) + '%';
+    topBtn.classList.toggle('show', y > 480);
+    if (!reduceMotion) heroBg.style.transform = 'scale(1.08) translateY(' + Math.min(y * .12, 40) + 'px)';
+    ticking = false;
+  }
+  window.addEventListener('scroll', () => { if (!ticking) { requestAnimationFrame(onScroll); ticking = true; } }, { passive: true });
+  topBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }));
 })();
 </script>
 </body>

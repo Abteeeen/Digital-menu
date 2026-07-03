@@ -2,26 +2,54 @@ import { config } from '../config.js';
 
 const API = 'https://openrouter.ai/api/v1/chat/completions';
 
-async function chat(model, messages, { json = false } = {}) {
+// Fallback chains tried in order after the configured primary model, so a
+// rate-limited or momentarily-down model doesn't kill the whole run. Vision
+// and text fallbacks are kept separate since not every model here can read
+// images.
+const VISION_FALLBACK_MODELS = [
+  'anthropic/claude-3.5-sonnet',
+  'openai/gpt-4o',
+  'google/gemini-2.0-flash-001',
+];
+const TEXT_FALLBACK_MODELS = [
+  'meta-llama/llama-3.3-70b-instruct',
+  'meta-llama/llama-3.1-8b-instruct',
+  'mistralai/mixtral-8x7b-instruct',
+  'google/gemma-2-9b-it',
+];
+
+async function chat(primaryModel, messages, { json = false, fallbacks = [] } = {}) {
   if (!config.openRouterKey) {
     throw new Error('OPENROUTER_API_KEY is not set. Add it to .env or run with --demo.');
   }
-  const res = await fetch(API, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${config.openRouterKey}`,
-      'Content-Type': 'application/json',
-      'X-Title': 'plate-pixel',
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      ...(json ? { response_format: { type: 'json_object' } } : {}),
-    }),
-  });
-  if (!res.ok) throw new Error(`OpenRouter ${res.status}: ${await res.text()}`);
-  const data = await res.json();
-  return data.choices[0].message.content;
+  const models = [primaryModel, ...fallbacks.filter((m) => m !== primaryModel)];
+  let lastErr;
+  for (const model of models) {
+    try {
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${config.openRouterKey}`,
+          'Content-Type': 'application/json',
+          'X-Title': 'plate-pixel',
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          ...(json ? { response_format: { type: 'json_object' } } : {}),
+        }),
+      });
+      if (!res.ok) throw new Error(`OpenRouter ${res.status} (${model}): ${await res.text()}`);
+      const data = await res.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) throw new Error(`OpenRouter (${model}) returned no content`);
+      return content;
+    } catch (err) {
+      if (models.length > 1) console.warn(`  ! model ${model} failed: ${err.message}`);
+      lastErr = err;
+    }
+  }
+  throw lastErr;
 }
 
 /** Extract the first JSON object from a model reply (tolerates code fences). */
@@ -70,7 +98,10 @@ ${JSON.stringify(pageMeta).slice(0, 6000)}`;
     { type: 'text', text: prompt },
     { type: 'image_url', image_url: { url: `data:image/png;base64,${screenshotBase64}` } },
   ];
-  const reply = await chat(config.visionModel, [{ role: 'user', content }], { json: true });
+  const reply = await chat(config.visionModel, [{ role: 'user', content }], {
+    json: true,
+    fallbacks: VISION_FALLBACK_MODELS,
+  });
   return parseJson(reply);
 }
 
@@ -85,6 +116,9 @@ Rules:
 
 Restaurant: ${restaurant}. Sender first name: ${fromName}.
 Return ONLY JSON: { "headline": "...", "body": "..." }`;
-  const reply = await chat(config.textModel, [{ role: 'user', content: prompt }], { json: true });
+  const reply = await chat(config.textModel, [{ role: 'user', content: prompt }], {
+    json: true,
+    fallbacks: TEXT_FALLBACK_MODELS,
+  });
   return parseJson(reply);
 }
