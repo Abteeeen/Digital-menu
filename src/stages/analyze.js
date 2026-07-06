@@ -122,6 +122,109 @@ function pickLayout(photoCount, modelChoice) {
   return VALID_LAYOUTS.includes(modelChoice) ? modelChoice : 'grid-card';
 }
 
+// A genuine upgraded dish photo should never be this tiny — guards against a
+// wrong pattern guess still returning HTTP 200 with a 1x1 pixel, a
+// "resize out of range" placeholder, or an error page carrying an image/*
+// content-type. Real photos in this size range are tens of KB minimum.
+const MIN_UPGRADED_PHOTO_BYTES = 2000;
+
+// Matches what a real browser <img> load sends; some CDNs use this for
+// content negotiation (e.g. serving a larger/less-compressed default).
+const IMG_ACCEPT_HEADER = 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8';
+
+// Long-edge target (px) when rewriting a known CDN thumbnail URL.
+const IMAGE_UPGRADE_TARGET_PX = 1200;
+
+// Known CDN thumbnail-resize URL shapes. Menu-builder platforms (Square,
+// Wix, Squarespace) commonly only expose a small (~150-160px) thumbnail URL
+// in their markup — the exact URL our photo-detection threshold was lowered
+// to accept — which then gets upscaled into much bigger CSS boxes on a
+// retina phone, visibly soft. Each function returns an upgraded URL string,
+// or null if it doesn't recognize this URL; the caller falls back to the
+// original, unchanged URL when nothing matches or the upgrade fails.
+const CDN_UPGRADE_PATTERNS = [
+  // Square/Weebly (cdn6.editmysite.com, *.square.site assets):
+  // ?width=160&optimize=medium
+  function squareWeebly(u) {
+    if (!u.searchParams.has('width')) return null;
+    const origWidth = Number(u.searchParams.get('width'));
+    if (!origWidth || origWidth >= IMAGE_UPGRADE_TARGET_PX) return null;
+    const factor = IMAGE_UPGRADE_TARGET_PX / origWidth;
+    u.searchParams.set('width', String(IMAGE_UPGRADE_TARGET_PX));
+    if (u.searchParams.has('height')) {
+      const origHeight = Number(u.searchParams.get('height'));
+      if (origHeight) u.searchParams.set('height', String(Math.round(origHeight * factor)));
+    }
+    return u.toString();
+  },
+  // Wix (static.wixstatic.com): .../v1/fill/w_147,h_196,al_c,.../filename
+  function wix(u) {
+    const m = /\/fill\/w_(\d+),h_(\d+),/.exec(u.pathname);
+    if (!m) return null;
+    const [full, wStr, hStr] = m;
+    const origW = Number(wStr), origH = Number(hStr);
+    if (!origW || !origH) return null;
+    const factor = IMAGE_UPGRADE_TARGET_PX / Math.max(origW, origH);
+    if (factor <= 1) return null;
+    const newW = Math.round(origW * factor);
+    const newH = Math.round(origH * factor);
+    u.pathname = u.pathname.replace(full, `/fill/w_${newW},h_${newH},`);
+    return u.toString();
+  },
+  // Squarespace-style CDNs: /fit-in/160x160/
+  function squarespace(u) {
+    const m = /\/fit-in\/(\d+)x(\d+)\//.exec(u.pathname);
+    if (!m) return null;
+    const [full, wStr, hStr] = m;
+    const origW = Number(wStr), origH = Number(hStr);
+    if (!origW || !origH) return null;
+    const factor = IMAGE_UPGRADE_TARGET_PX / Math.max(origW, origH);
+    if (factor <= 1) return null;
+    const newW = Math.round(origW * factor);
+    const newH = Math.round(origH * factor);
+    u.pathname = u.pathname.replace(full, `/fit-in/${newW}x${newH}/`);
+    return u.toString();
+  },
+];
+
+function upgradeImageUrl(src) {
+  let u;
+  try {
+    u = new URL(src);
+  } catch {
+    return null;
+  }
+  for (const pattern of CDN_UPGRADE_PATTERNS) {
+    try {
+      const upgraded = pattern(new URL(u));
+      if (upgraded && upgraded !== src) return upgraded;
+    } catch {}
+  }
+  return null;
+}
+
+/**
+ * Fetch a candidate *upgraded* photo URL. Returns { ext, body } only if the
+ * response looks like a genuine, non-trivial image — otherwise null so the
+ * caller silently falls back to the original, known-working URL. Stricter
+ * than the original-URL fetch (which just checks resp.ok()) because we're
+ * trusting a guessed URL here.
+ */
+async function tryUpgradedPhoto(page, url) {
+  try {
+    const resp = await page.request.get(url, { timeout: 15000, headers: { Accept: IMG_ACCEPT_HEADER } });
+    if (!resp.ok()) return null;
+    const ct = resp.headers()['content-type'] || '';
+    if (!ct.startsWith('image/')) return null;
+    const body = await resp.body();
+    if (body.length < MIN_UPGRADED_PHOTO_BYTES) return null;
+    const ext = ct.includes('png') ? 'png' : ct.includes('webp') ? 'webp' : ct.includes('gif') ? 'gif' : 'jpg';
+    return { ext, body };
+  } catch {
+    return null;
+  }
+}
+
 async function capture(url) {
   const browser = await launchBrowser();
   try {
@@ -156,14 +259,34 @@ async function capture(url) {
     pageMeta.low_content = pageMeta.text.trim().length < MIN_CONTENT_CHARS;
 
     // Download the candidate photos so the rebuilt app can embed them.
+    // Menu-builder CDNs (Square, Wix, etc.) often serve dish photos as small
+    // thumbnails (~150-160px) that then get upscaled into much bigger CSS
+    // boxes on a retina phone — visibly soft. Try a known CDN resize-URL
+    // upgrade first; if it doesn't apply, fails, or looks wrong, fall back
+    // to the original URL exactly as before. Never let a wrong guess break
+    // a capture that currently works.
     const photoFiles = [];
     for (const p of pageMeta.photos) {
       try {
-        const resp = await page.request.get(p.src, { timeout: 15000 });
-        if (!resp.ok()) continue;
-        const ct = resp.headers()['content-type'] || '';
-        const ext = ct.includes('png') ? 'png' : ct.includes('webp') ? 'webp' : ct.includes('gif') ? 'gif' : 'jpg';
-        photoFiles.push({ index: p.index, ext, body: await resp.body(), src: p.src, alt: p.alt });
+        const upgradedUrl = upgradeImageUrl(p.src);
+        let result = null;
+        let usedSrc = p.src;
+
+        if (upgradedUrl) {
+          result = await tryUpgradedPhoto(page, upgradedUrl);
+          if (result) usedSrc = upgradedUrl;
+        }
+
+        if (!result) {
+          const resp = await page.request.get(p.src, { timeout: 15000, headers: { Accept: IMG_ACCEPT_HEADER } });
+          if (!resp.ok()) continue;
+          const ct = resp.headers()['content-type'] || '';
+          const ext = ct.includes('png') ? 'png' : ct.includes('webp') ? 'webp' : ct.includes('gif') ? 'gif' : 'jpg';
+          result = { ext, body: await resp.body() };
+          usedSrc = p.src;
+        }
+
+        photoFiles.push({ index: p.index, ext: result.ext, body: result.body, src: usedSrc, alt: p.alt });
       } catch {}
     }
 

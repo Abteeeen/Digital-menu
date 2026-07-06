@@ -33,17 +33,39 @@
     background: linear-gradient(155deg, var(--primary), color-mix(in srgb, var(--primary) 55%, #000));
     padding: 54px 24px 40px; position: relative; overflow: hidden;
   }
-  .masthead::after {
+  .masthead .photo {
+    position: absolute; inset: 0; z-index: 0;
+    background-size: cover; background-position: center;
+    opacity: 0; transition: opacity .4s var(--ease);
+    filter: saturate(1.05) brightness(.6);
+  }
+  .masthead .photo.on { opacity: .6; }
+  /* Text is distributed through the whole masthead height (not just the
+     bottom, unlike grid-card's hero), so the photo needs a dedicated dark
+     scrim rather than relying on the photo's own filter alone — a bright
+     patch in the source photo (e.g. cheese, egg whites) can otherwise wash
+     out the eyebrow/tagline regardless of overall brightness/opacity. */
+  .masthead .photo::after {
     content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.25) 45%, rgba(0,0,0,.55) 100%);
+  }
+  .masthead::after {
+    content: ''; position: absolute; inset: 0; z-index: 1;
     background: repeating-linear-gradient(135deg, rgba(255,255,255,.04) 0 2px, transparent 2px 14px);
   }
-  .eyebrow { position: relative; font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: color-mix(in srgb, var(--accent) 80%, white); }
+  .eyebrow, h1, .tagline { position: relative; z-index: 2; }
+  /* Fixed light tone, not accent-derived: the masthead background (gradient
+     or photo) is always dark by design, and color-mixing toward a brand
+     accent that happens to be dark itself (e.g. a charcoal #323232) could
+     produce illegible dark-on-dark text — a real bug this surfaced once
+     hero photos got wired in here. */
+  .eyebrow { font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: rgba(255,255,255,.82); }
   h1 {
-    position: relative; font-family: var(--serif); font-weight: 800; font-size: clamp(32px, 11vw, 52px);
+    font-family: var(--serif); font-weight: 800; font-size: clamp(32px, 11vw, 52px);
     line-height: .98; margin-top: 10px; letter-spacing: -.01em; color: #fff;
   }
   h1 .cuisine { color: var(--accent); }
-  .tagline { position: relative; margin-top: 14px; font-size: 13px; color: rgba(255,255,255,.78); max-width: 30ch; }
+  .tagline { margin-top: 14px; font-size: 13px; color: rgba(255,255,255,.78); max-width: 30ch; }
 
   /* ---- chrome ---- */
   .chrome {
@@ -119,6 +141,7 @@
 </head>
 <body>
 <div class="masthead">
+  <div class="photo" id="mastheadPhoto" aria-hidden="true"></div>
   <div class="eyebrow" id="eyebrow"></div>
   <h1 id="name"></h1>
   <div class="tagline" id="tagline"></div>
@@ -138,7 +161,7 @@
 <script>
 const DATA = /*__MENU_DATA__*/null;
 (function () {
-  const { brand, menu } = DATA;
+  const { brand, menu, hero_image } = DATA;
   const r = document.documentElement.style;
   if (brand.primary_color) r.setProperty('--primary', brand.primary_color);
   if (brand.accent_color) r.setProperty('--accent', brand.accent_color);
@@ -149,6 +172,11 @@ const DATA = /*__MENU_DATA__*/null;
   document.getElementById('eyebrow').textContent = brand.cuisine || 'The Menu';
   document.getElementById('tagline').textContent = brand.tagline || '';
   document.getElementById('foot').textContent = brand.name + ' · digital menu';
+  if (hero_image) {
+    const photo = document.getElementById('mastheadPhoto');
+    photo.style.backgroundImage = 'url(' + hero_image + ')';
+    photo.classList.add('on');
+  }
 
   const nav = document.getElementById('nav');
   const menuEl = document.getElementById('menu');
