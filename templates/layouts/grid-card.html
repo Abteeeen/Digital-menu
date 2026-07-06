@@ -257,6 +257,11 @@ const DATA = /*__MENU_DATA__*/null;
     d.className = 'item';
     if (!io) d.classList.add('in');
     d.style.transitionDelay = io ? Math.min(delay * 45, 360) + 'ms' : '0ms';
+    // Safety net: IntersectionObserver only fires on real scroll/resize, which
+    // tools that rasterize beyond the viewport (full-page screenshots, some
+    // print/export paths) never trigger. Never leave real menu content
+    // permanently invisible-but-taking-space — force it in after a beat.
+    if (io) setTimeout(() => d.classList.add('in'), 1200 + delay * 45);
     if (it.image) {
       const wrap = document.createElement('div');
       wrap.className = 'photowrap';

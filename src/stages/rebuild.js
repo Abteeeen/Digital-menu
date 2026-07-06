@@ -6,19 +6,23 @@ import { config } from '../config.js';
 
 const exec = promisify(execFile);
 
+const LAYOUTS = ['grid-card', 'list-ledger', 'magazine-split'];
+const DEFAULT_LAYOUT = 'grid-card';
+
 /**
  * Stage 3 — Rebuild.
- * Injects the extracted menu + brand into the mobile menu-app template,
- * writes a self-contained static app to out/<slug>/app/, and deploys it to
- * Vercel when VERCEL_TOKEN is set. Returns the live URL.
- * Writes out/<slug>/rebuild.json.
+ * Injects the extracted menu + brand into the layout template analyzeSite()
+ * picked (templates/layouts/<layout>.html), writes a self-contained static
+ * app to out/<slug>/app/, and deploys it to Vercel when VERCEL_TOKEN is set.
+ * Returns the live URL. Writes out/<slug>/rebuild.json.
  */
 export async function rebuild(lead, analysis) {
   const dir = path.join(config.outDir, lead.slug);
   const appDir = path.join(dir, 'app');
   await fs.mkdir(appDir, { recursive: true });
 
-  const template = await fs.readFile(path.join(config.templatesDir, 'menu-app.html'), 'utf8');
+  const layout = LAYOUTS.includes(analysis.layout) ? analysis.layout : DEFAULT_LAYOUT;
+  const template = await fs.readFile(path.join(config.templatesDir, 'layouts', `${layout}.html`), 'utf8');
   const images = await loadAssets(path.join(dir, 'assets'));
   const menu = attachImages(analysis.menu, images);
   const payload = {
@@ -35,12 +39,12 @@ export async function rebuild(lead, analysis) {
   if (config.vercelToken) {
     url = await deployToVercel(appDir, lead.slug);
     deployed = true;
-    console.log(`  deployed: ${url}`);
+    console.log(`  deployed (${layout}): ${url}`);
   } else {
-    console.log(`  built static app at out/${lead.slug}/app (no VERCEL_TOKEN; QR will use ${url})`);
+    console.log(`  built static app at out/${lead.slug}/app (${layout} layout; no VERCEL_TOKEN; QR will use ${url})`);
   }
 
-  const result = { url, deployed, app_dir: appDir };
+  const result = { url, deployed, app_dir: appDir, layout };
   await fs.writeFile(path.join(dir, 'rebuild.json'), JSON.stringify(result, null, 2));
   return result;
 }

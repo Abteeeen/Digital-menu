@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#f7f3ec">
+<title>Menu</title>
+<style>
+  :root {
+    --primary: #8a5a34;
+    --accent: #b33a2e;
+    --bg: #f7f3ec;
+    --text: #241f1a;
+    --muted: #746a5c;
+    --line: rgba(36,31,26,.14);
+    --rule: rgba(36,31,26,.28);
+    --serif: Georgia, 'Times New Roman', serif;
+    --sans: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --ease: cubic-bezier(.22,.85,.28,1);
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg); color: var(--text); font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    max-width: 560px; margin: 0 auto; min-height: 100vh; padding-bottom: calc(56px + var(--safe-b));
+    background-image:
+      repeating-linear-gradient(0deg, rgba(0,0,0,.015) 0 1px, transparent 1px 3px);
+  }
+
+  /* ---- masthead ---- */
+  .masthead { padding: 46px 28px 26px; text-align: center; border-bottom: 3px double var(--rule); }
+  .mark { font-family: var(--serif); font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: var(--muted); }
+  h1 {
+    font-family: var(--serif); font-weight: 700; font-size: clamp(30px, 9vw, 44px);
+    margin-top: 10px; letter-spacing: .01em; line-height: 1.05;
+  }
+  .tagline { font-family: var(--serif); font-style: italic; color: var(--muted); font-size: 14px; margin-top: 10px; }
+  .rule2 { width: 64px; height: 1px; background: var(--rule); margin: 18px auto 0; }
+
+  /* ---- chrome ---- */
+  .chrome {
+    position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); padding: 12px 0 0;
+  }
+  .search { margin: 0 24px 10px; position: relative; }
+  .search input {
+    width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--rule);
+    color: var(--text); font: italic 400 15px var(--serif); padding: 8px 4px 8px 26px; outline: none;
+  }
+  .search input:focus { border-color: var(--primary); }
+  .search svg { position: absolute; left: 4px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; stroke: var(--muted); fill: none; stroke-width: 1.6; }
+  nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding: 0 20px 12px; }
+  nav::-webkit-scrollbar { display: none; }
+  nav button {
+    flex: 0 0 auto; border: 1px solid var(--rule); background: transparent;
+    color: var(--muted); font: 600 10.5px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase;
+    padding: 8px 14px; border-radius: 2px; cursor: pointer; transition: .18s;
+  }
+  nav button.on { background: var(--primary); border-color: var(--primary); color: #fdf9f2; }
+
+  /* ---- ledger ---- */
+  section { padding: 8px 26px; }
+  h2 {
+    font-family: var(--serif); font-weight: 700; font-size: 13px; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--primary); margin: 32px 0 4px; text-align: center; position: relative;
+  }
+  h2::before, h2::after { content: '❧'; color: var(--rule); font-size: 12px; margin: 0 10px; }
+
+  .row {
+    padding: 16px 0; border-bottom: 1px solid var(--line);
+    opacity: 0; transform: translateY(10px);
+    transition: opacity .5s var(--ease), transform .5s var(--ease);
+  }
+  .row.in { opacity: 1; transform: none; }
+  .row:active { background: color-mix(in srgb, var(--primary) 5%, transparent); }
+  .row .head { display: flex; align-items: baseline; gap: 8px; }
+  .row h3 { font-family: var(--serif); font-weight: 700; font-size: 16px; flex: 0 0 auto; }
+  .row .leader { flex: 1; border-bottom: 1px dotted var(--rule); transform: translateY(-4px); min-width: 12px; }
+  .row .price { font-family: var(--serif); font-weight: 700; color: var(--primary); font-size: 15px; flex: 0 0 auto; white-space: nowrap; }
+  .row p { font-size: 13px; color: var(--muted); line-height: 1.55; margin-top: 5px; font-style: italic; max-width: 46ch; }
+  .row .thumb {
+    float: right; width: 56px; height: 56px; border-radius: 50%; object-fit: cover;
+    margin: 0 0 6px 12px; border: 1px solid var(--rule); filter: sepia(.12) saturate(.9);
+  }
+
+  .empty { text-align: center; color: var(--muted); font-style: italic; font-family: var(--serif); padding: 60px 0; }
+  footer { text-align: center; color: var(--muted); font-size: 10px; letter-spacing: .16em; padding: 40px 0 8px; text-transform: uppercase; font-family: var(--serif); }
+
+  .top {
+    position: fixed; right: 16px; bottom: calc(18px + var(--safe-b)); z-index: 30;
+    width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--rule);
+    background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    opacity: 0; transform: translateY(10px); pointer-events: none;
+    transition: opacity .3s var(--ease), transform .3s var(--ease);
+  }
+  .top.show { opacity: 1; transform: none; pointer-events: auto; }
+  .top svg { width: 15px; height: 15px; stroke: var(--text); fill: none; stroke-width: 2.2; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+    html { scroll-behavior: auto; }
+    .row { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+<div class="masthead">
+  <div class="mark" id="mark"></div>
+  <h1 id="name"></h1>
+  <div class="tagline" id="tagline"></div>
+  <div class="rule2"></div>
+</div>
+<div class="chrome">
+  <div class="search">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+    <input id="q" type="search" placeholder="Search the menu…" autocomplete="off" aria-label="Search the menu">
+  </div>
+  <nav id="nav" aria-label="Menu categories"></nav>
+</div>
+<section id="menu"></section>
+<footer id="foot"></footer>
+<button class="top" id="top" aria-label="Back to top">
+  <svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+<script>
+const DATA = /*__MENU_DATA__*/null;
+(function () {
+  const { brand, menu, hero_image } = DATA;
+  const r = document.documentElement.style;
+  if (brand.primary_color) r.setProperty('--primary', brand.primary_color);
+  if (brand.accent_color) r.setProperty('--accent', brand.accent_color);
+  if (brand.font_style === 'sans') r.setProperty('--serif', 'var(--sans)');
+
+  document.title = brand.name + ' — Menu';
+  document.getElementById('name').textContent = brand.name;
+  document.getElementById('mark').textContent = brand.cuisine || 'Est. Menu';
+  document.getElementById('tagline').textContent = brand.tagline || '';
+  document.getElementById('foot').textContent = brand.name + ' · digital menu';
+
+  const nav = document.getElementById('nav');
+  const menuEl = document.getElementById('menu');
+  const q = document.getElementById('q');
+  const cats = menu.categories || [];
+  let active = 0;
+
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const io = 'IntersectionObserver' in window && !reduceMotion
+    ? new IntersectionObserver((entries) => {
+        entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+      }, { rootMargin: '0px 0px -8% 0px', threshold: .05 })
+    : null;
+
+  function row(it, delay) {
+    const d = document.createElement('div');
+    d.className = 'row';
+    if (!io) d.classList.add('in');
+    d.style.transitionDelay = io ? Math.min(delay * 40, 320) + 'ms' : '0ms';
+    if (io) setTimeout(() => d.classList.add('in'), 1200 + delay * 40);
+    if (it.image) {
+      const img = document.createElement('img');
+      img.className = 'thumb';
+      img.src = it.image;
+      img.alt = it.name;
+      img.loading = 'lazy';
+      d.appendChild(img);
+    }
+    const head = document.createElement('div');
+    head.className = 'head';
+    head.innerHTML = '<h3></h3><div class="leader"></div><div class="price"></div>';
+    head.querySelector('h3').textContent = it.name;
+    head.querySelector('.price').textContent = it.price || '';
+    if (!it.price) { head.querySelector('.leader').remove(); head.querySelector('.price').remove(); }
+    d.appendChild(head);
+    if (it.description) {
+      const p = document.createElement('p');
+      p.textContent = it.description;
+      d.appendChild(p);
+    }
+    if (io) io.observe(d);
+    return d;
+  }
+
+  function render() {
+    menuEl.innerHTML = '';
+    const term = q.value.trim().toLowerCase();
+    if (term) {
+      let n = 0;
+      for (const c of cats) {
+        const hits = c.items.filter((it) =>
+          (it.name + ' ' + (it.description || '')).toLowerCase().includes(term));
+        if (!hits.length) continue;
+        const h = document.createElement('h2');
+        h.textContent = c.name;
+        menuEl.appendChild(h);
+        hits.forEach((it) => menuEl.appendChild(row(it, n++)));
+      }
+      if (!n) menuEl.innerHTML = '<div class="empty">Nothing matches “' + term.replace(/</g, '&lt;') + '”</div>';
+      return;
+    }
+    [...nav.children].forEach((b, i) => b.classList.toggle('on', i === active));
+    const c = cats[active];
+    if (!c) return;
+    const h = document.createElement('h2');
+    h.textContent = c.name;
+    menuEl.appendChild(h);
+    c.items.forEach((it, i) => menuEl.appendChild(row(it, i)));
+  }
+
+  cats.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.textContent = c.name;
+    b.onclick = () => { q.value = ''; active = i; render(); window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }); };
+    nav.appendChild(b);
+  });
+  q.addEventListener('input', render);
+  render();
+
+  const topBtn = document.getElementById('top');
+  window.addEventListener('scroll', () => {
+    topBtn.classList.toggle('show', window.scrollY > 480);
+  }, { passive: true });
+  topBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }));
+})();
+</script>
+</body>
+</html>

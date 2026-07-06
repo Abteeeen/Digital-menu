@@ -49,19 +49,32 @@ Each stage can also run standalone (`discover`, `analyze [slug]`, `rebuild <slug
 2. **Analysis & Extraction** (`src/stages/analyze.js`) — Playwright loads the site at iPhone
    viewport, takes a full-page screenshot, and scrapes metadata (title tag, computed fonts,
    colors, body text). A vision model via **OpenRouter** scores ugliness 1–10, extracts every
-   menu item + price, pulls brand colors/fonts, and finds one specific verifiable **quirk**
+   menu item + price, pulls brand colors/fonts, picks one of three **layouts** to best fit the
+   brand (see below), and finds one specific verifiable **quirk**
    (e.g. *"Your website tab title says 'Vid Nikolic' instead of Kiyomi"*). Sites scoring
    below `UGLINESS_THRESHOLD` are skipped — we only pitch people we can genuinely help.
-3. **Rebuild** (`src/stages/rebuild.js`) — injects the extracted menu + brand into
-   `templates/menu-app.html`, a zero-dependency single-file mobile app themed with their own
-   colors. Deploys to Vercel when `VERCEL_TOKEN` is set; otherwise the static build in
-   `out/<slug>/app/` works on any host.
+   Every discovered/analyzed lead is also logged to `data/leads.csv` for manual review.
+3. **Rebuild** (`src/stages/rebuild.js`) — injects the extracted menu + brand into whichever
+   `templates/layouts/<layout>.html` analysis picked, a zero-dependency single-file mobile app
+   themed with their own colors. Deploys to Vercel when `VERCEL_TOKEN` is set; otherwise the
+   static build in `out/<slug>/app/` works on any host.
 4. **The Pitch** (`src/stages/pitch.js`) — generates the QR code and postcard copy. The copy
    must quote the quirk. Renders Lob-compatible print HTML (4x6", bleed-safe, address zone
    kept clear).
 5. **Fulfillment** (`src/stages/fulfill.js`) — POSTs front/back HTML + the restaurant's
    registered address to Lob's Postcards API. Use a `test_` key for free dry runs; the run
    log records the Lob id and delivery ETA.
+
+### Layouts (`templates/layouts/`)
+
+One shared skin doesn't read as "hyper-personalized," so rebuild picks between three distinct
+compositions per restaurant instead of just recoloring one template:
+
+| Layout | Best for | Look |
+|---|---|---|
+| `grid-card` | The balanced default (4–6 usable real photos) | Photo-card grid, sticky category pills |
+| `list-ledger` | Classic/formal brands, or 3 or fewer usable photos | Typographic printed-menu-card, no photo dependency |
+| `magazine-split` | Vibrant/casual brands with 6+ usable real photos | Bold color-blocked editorial spread, alternating imagery |
 
 **Showcase** (`src/stages/showcase.js`) renders the 1920×1080 presentation frame — before
 screenshot, phone mock running the real generated app, and the postcard — for demos and
